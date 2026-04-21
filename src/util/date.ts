@@ -31,7 +31,9 @@ export const INPUT_FORMAT = 'DD.MM.YYYY HH:mm';
  * @returns `true` when the identifier is accepted, `false` otherwise.
  */
 export function isValidIanaTz(tz: string): boolean {
-  if (typeof tz !== 'string' || tz.length === 0) {return false;}
+  if (typeof tz !== 'string' || tz.length === 0) {
+    return false;
+  }
 
   try {
     new Intl.DateTimeFormat('en-US', { timeZone: tz });
@@ -53,9 +55,13 @@ export function parseLocalDate(input: string, tz: string): string | null {
   const trimmed = input.trim();
   const d = dayjs.tz(trimmed, INPUT_FORMAT, tz);
 
-  if (!d.isValid()) {return null;}
+  if (!d.isValid()) {
+    return null;
+  }
 
-  if (d.format(INPUT_FORMAT) !== trimmed) {return null;}
+  if (d.format(INPUT_FORMAT) !== trimmed) {
+    return null;
+  }
 
   return d.utc().toISOString();
 }
@@ -129,6 +135,24 @@ export function localDayIso(tz: string, refUtcIso?: string): string {
  */
 export function formatLocalTime(isoUtc: string, tz: string): string {
   return dayjs.utc(isoUtc).tz(tz).format('HH:mm');
+}
+
+/**
+ * Renders a localized `day + month + time` label (e.g. "24 апреля, 18:00",
+ * "April 24, 18:00") using the locale's month names and date-time template.
+ *
+ * @param isoUtc ISO UTC instant.
+ * @param tz IANA timezone.
+ * @param locale UI locale.
+ * @returns Localised date-time label.
+ */
+export function formatLocalDateTime(isoUtc: string, tz: string, locale: Locale): string {
+  const messages = t(locale);
+  const d = dayjs.utc(isoUtc).tz(tz);
+  const month = messages.digest.months[d.month()] ?? '';
+  const time = d.format('HH:mm');
+
+  return messages.card.dateTime({ day: d.date(), month, time });
 }
 
 /**

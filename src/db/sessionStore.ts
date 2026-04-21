@@ -29,7 +29,9 @@ export class D1SessionStorage<T> implements StorageAdapter<T> {
       .bind(key)
       .first<{ value: string }>();
 
-    if (!row) {return undefined;}
+    if (!row) {
+      return undefined;
+    }
 
     return JSON.parse(row.value) as T;
   }

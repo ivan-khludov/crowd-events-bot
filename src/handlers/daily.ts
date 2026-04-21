@@ -56,7 +56,9 @@ async function announceGroupDaily(api: Api, repo: Repo, group: GroupRow): Promis
   const chatId = group.chat_id;
   const todayKey = localDayIso(group.tz);
 
-  if (group.last_daily_digest_day === todayKey) {return;}
+  if (group.last_daily_digest_day === todayKey) {
+    return;
+  }
 
   const { startUtc, endUtc } = dayBounds(group.tz);
   const events = await repo.listApprovedInRange(chatId, startUtc, endUtc);

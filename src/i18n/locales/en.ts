@@ -55,6 +55,7 @@ export const en: Messages = {
   },
   card: {
     originalLinkText: 'Original',
+    dateTime: ({ day, month, time }) => `${month} ${day}, ${time}`,
   },
   digest: {
     empty: 'No approved events yet.',

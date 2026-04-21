@@ -33,7 +33,9 @@ export const LOCALE_NATIVE_NAMES: Readonly<Record<Locale, string>> = {
  * @returns The matching locale or `null` when it is not supported.
  */
 export function resolveLocale(input: string | null | undefined): Locale | null {
-  if (!input) {return null;}
+  if (!input) {
+    return null;
+  }
 
   const lc = input.trim().toLowerCase();
 
@@ -58,6 +60,16 @@ export interface DayLabelArgs {
   weekday: string;
   day: number;
   month: string;
+}
+
+/**
+ * Arguments rendered into the per-event date-time label shown on voting cards.
+ * Kept locale-aware because different languages order day/month differently.
+ */
+export interface DateTimeArgs {
+  day: number;
+  month: string;
+  time: string;
 }
 
 /**
@@ -125,6 +137,7 @@ export interface Messages {
   };
   card: {
     originalLinkText: string;
+    dateTime: (args: DateTimeArgs) => string;
   };
   digest: {
     empty: string;

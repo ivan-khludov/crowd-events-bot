@@ -200,7 +200,9 @@ export function buildPrefixConversation(env: Env): ConversationBuilder<AppContex
  */
 export function registerDmKickoff(bot: Bot<AppContext>): void {
   bot.on('message', async (ctx, next) => {
-    if (ctx.chat?.type !== 'private' || !ctx.from) {return next();}
+    if (ctx.chat?.type !== 'private' || !ctx.from) {
+      return next();
+    }
 
     if (
       ctx.conversation.active(EVENT_CONVERSATION_ID) > 0 ||
@@ -280,7 +282,9 @@ async function askDateTime(
     const text = msg.msg.text;
     const parsed = parseLocalDate(text, tz);
 
-    if (parsed) {return parsed;}
+    if (parsed) {
+      return parsed;
+    }
 
     await msg.reply(messages.event.invalidDate(INPUT_FORMAT), {
       parse_mode: 'HTML',
@@ -303,7 +307,9 @@ async function askNonEmpty(
     const msg = await conversation.waitFor(':text');
     const value = msg.msg.text.trim().slice(0, MAX_FIELD_LEN);
 
-    if (value.length > 0) {return value;}
+    if (value.length > 0) {
+      return value;
+    }
 
     await msg.reply(errorText);
   }

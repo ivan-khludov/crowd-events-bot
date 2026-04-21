@@ -39,7 +39,9 @@ const PREFIX_PREVIEW_LEN = 80;
  */
 export function registerAdminHandlers(bot: Bot<AppContext>): void {
   bot.command('settings', async (ctx) => {
-    if (!(await ensureGroupAdmin(ctx))) {return;}
+    if (!(await ensureGroupAdmin(ctx))) {
+      return;
+    }
 
     const chatId = ctx.chat.id;
     const chatUsername = 'username' in ctx.chat ? (ctx.chat.username ?? null) : null;
@@ -61,7 +63,9 @@ export function registerAdminHandlers(bot: Bot<AppContext>): void {
   });
 
   bot.command('threshold', async (ctx) => {
-    if (!(await ensureGroupAdmin(ctx))) {return;}
+    if (!(await ensureGroupAdmin(ctx))) {
+      return;
+    }
 
     const locale = await resolveGroupLocale(ctx);
     const messages = t(locale);
@@ -83,7 +87,9 @@ export function registerAdminHandlers(bot: Bot<AppContext>): void {
   });
 
   bot.command('limit', async (ctx) => {
-    if (!(await ensureGroupAdmin(ctx))) {return;}
+    if (!(await ensureGroupAdmin(ctx))) {
+      return;
+    }
 
     const locale = await resolveGroupLocale(ctx);
     const messages = t(locale);
@@ -105,7 +111,9 @@ export function registerAdminHandlers(bot: Bot<AppContext>): void {
   });
 
   const timezoneHandler = async (ctx: CommandContext<AppContext>): Promise<void> => {
-    if (!(await ensureGroupAdmin(ctx))) {return;}
+    if (!(await ensureGroupAdmin(ctx))) {
+      return;
+    }
 
     const chatId = ctx.chat.id;
     const chatUsername = 'username' in ctx.chat ? (ctx.chat.username ?? null) : null;
@@ -148,7 +156,9 @@ export function registerAdminHandlers(bot: Bot<AppContext>): void {
   bot.command('tz', timezoneHandler);
 
   const languageHandler = async (ctx: CommandContext<AppContext>): Promise<void> => {
-    if (!(await ensureGroupAdmin(ctx))) {return;}
+    if (!(await ensureGroupAdmin(ctx))) {
+      return;
+    }
 
     const chatId = ctx.chat.id;
     const chatUsername = 'username' in ctx.chat ? (ctx.chat.username ?? null) : null;
@@ -192,7 +202,9 @@ export function registerAdminHandlers(bot: Bot<AppContext>): void {
   bot.command('lang', languageHandler);
 
   bot.command('prefix', async (ctx) => {
-    if (!(await ensureGroupAdmin(ctx))) {return;}
+    if (!(await ensureGroupAdmin(ctx))) {
+      return;
+    }
 
     const chatId = ctx.chat.id;
     const chatUsername = 'username' in ctx.chat ? (ctx.chat.username ?? null) : null;
@@ -219,7 +231,9 @@ export function registerAdminHandlers(bot: Bot<AppContext>): void {
   });
 
   bot.command('clearprefix', async (ctx) => {
-    if (!(await ensureGroupAdmin(ctx))) {return;}
+    if (!(await ensureGroupAdmin(ctx))) {
+      return;
+    }
 
     const locale = await resolveGroupLocale(ctx);
     const messages = t(locale);
@@ -266,7 +280,9 @@ async function ensureGroupAdmin(ctx: CommandContext<AppContext>): Promise<boolea
   const chat = ctx.chat;
   const user = ctx.from;
 
-  if (!chat || !user) {return false;}
+  if (!chat || !user) {
+    return false;
+  }
 
   if (chat.type !== 'group' && chat.type !== 'supergroup') {
     await ctx.reply(t(coerceLocale(null)).admin.onlyGroup);
@@ -303,15 +319,21 @@ async function ensureGroupAdmin(ctx: CommandContext<AppContext>): Promise<boolea
  * @returns Parsed integer or `null` when the input is not a valid integer.
  */
 function parseIntArg(raw: string | undefined): number | null {
-  if (!raw) {return null;}
+  if (!raw) {
+    return null;
+  }
 
   const trimmed = raw.trim();
 
-  if (!/^-?\d+$/.test(trimmed)) {return null;}
+  if (!/^-?\d+$/.test(trimmed)) {
+    return null;
+  }
 
   const n = Number(trimmed);
 
-  if (!Number.isInteger(n)) {return null;}
+  if (!Number.isInteger(n)) {
+    return null;
+  }
 
   return n;
 }
@@ -326,7 +348,9 @@ function parseIntArg(raw: string | undefined): number | null {
 function renderPrefixPreview(html: string | null, locale: Locale): string {
   const messages = t(locale);
 
-  if (!html || html.trim().length === 0) {return messages.admin.prefixPreviewNone;}
+  if (!html || html.trim().length === 0) {
+    return messages.admin.prefixPreviewNone;
+  }
 
   const plain = stripTags(html).replace(/\s+/g, ' ').trim();
   const snippet =

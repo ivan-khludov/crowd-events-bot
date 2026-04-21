@@ -53,6 +53,7 @@ export const ru: Messages = {
   },
   card: {
     originalLinkText: 'Оригинал',
+    dateTime: ({ day, month, time }) => `${day} ${month}, ${time}`,
   },
   digest: {
     empty: 'Пока нет подтверждённых событий.',

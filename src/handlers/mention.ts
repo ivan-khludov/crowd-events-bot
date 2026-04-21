@@ -24,27 +24,39 @@ export function registerMentionHandler(bot: Bot<AppContext>): void {
     const user = ctx.from;
     const chat = ctx.chat;
 
-    if (!msg || !user || !chat) {return next();}
+    if (!msg || !user || !chat) {
+      return next();
+    }
 
-    if (chat.type !== 'group' && chat.type !== 'supergroup') {return next();}
+    if (chat.type !== 'group' && chat.type !== 'supergroup') {
+      return next();
+    }
 
     const reply = msg.reply_to_message;
 
-    if (!reply) {return next();}
+    if (!reply) {
+      return next();
+    }
 
     const text = msg.text ?? msg.caption;
 
-    if (!text) {return next();}
+    if (!text) {
+      return next();
+    }
 
     const me = await ctx.api.getMe();
     const botUsername = me.username;
 
-    if (!botUsername) {return next();}
+    if (!botUsername) {
+      return next();
+    }
 
     const lc = text.toLowerCase();
     const needle = `@${botUsername.toLowerCase()}`;
 
-    if (!lc.includes(needle)) {return next();}
+    if (!lc.includes(needle)) {
+      return next();
+    }
 
     const groupUsername = chat.type === 'supergroup' && 'username' in chat ? chat.username : null;
     const group = await ctx.repo.upsertGroupMeta(

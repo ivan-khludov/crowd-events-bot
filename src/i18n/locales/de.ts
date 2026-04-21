@@ -55,6 +55,7 @@ export const de: Messages = {
   },
   card: {
     originalLinkText: 'Original',
+    dateTime: ({ day, month, time }) => `${day}. ${month}, ${time}`,
   },
   digest: {
     empty: 'Noch keine genehmigten Veranstaltungen.',

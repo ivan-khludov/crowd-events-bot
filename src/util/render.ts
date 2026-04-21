@@ -1,7 +1,13 @@
 import { t } from '../i18n/index.js';
 import type { Locale } from '../i18n/types.js';
 import type { EventRow } from '../types.js';
-import { formatLocalDayLabel, formatLocalTime, formatWeekHeader, localDayKey } from './date.js';
+import {
+  formatLocalDateTime,
+  formatLocalDayLabel,
+  formatLocalTime,
+  formatWeekHeader,
+  localDayKey,
+} from './date.js';
 import { buildPostLink } from './link.js';
 
 /**
@@ -39,11 +45,12 @@ export function renderEventCard(
   const messages = t(locale);
   const title = escapeHtml(event.title);
   const place = escapeHtml(event.place);
-  const time = formatLocalTime(event.datetime_utc, tz);
+  const when = formatLocalDateTime(event.datetime_utc, tz, locale);
   const link = buildPostLink(event.group_chat_id, event.original_message_id, groupUsername);
 
   return (
-    `<b>${title}</b> / ${place}, ${time}\n` +
+    `<b>${title}</b>\n` +
+    `📅 ${when} / ${place}\n` +
     `🔗 <a href="${link}">${messages.card.originalLinkText}</a>\n` +
     `👍 ${event.votes_up} | 👎 ${event.votes_down}`
   );
@@ -105,8 +112,11 @@ export function renderWeeklyDigest(
       const key = localDayKey(e.datetime_utc, tz);
       const list = byDay.get(key);
 
-      if (list) {list.push(e);}
-      else {byDay.set(key, [e]);}
+      if (list) {
+        list.push(e);
+      } else {
+        byDay.set(key, [e]);
+      }
     }
 
     const orderedKeys = [...byDay.keys()].sort((a, b) => a - b);
@@ -114,15 +124,19 @@ export function renderWeeklyDigest(
     for (const key of orderedKeys) {
       const dayEvents = byDay.get(key);
 
-      if (!dayEvents || dayEvents.length === 0) {continue;}
+      if (!dayEvents || dayEvents.length === 0) {
+        continue;
+      }
 
       const first = dayEvents[0];
 
-      if (!first) {continue;}
+      if (!first) {
+        continue;
+      }
 
       const dayLabel = formatLocalDayLabel(first.datetime_utc, tz, locale);
       bodyParts.push('');
-      bodyParts.push(`<b>${dayLabel}</b>`);
+      bodyParts.push(`<b><u>${dayLabel}</u></b>`);
 
       for (const e of dayEvents) {
         const title = escapeHtml(e.title);

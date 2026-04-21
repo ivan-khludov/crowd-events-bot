@@ -26,7 +26,9 @@ export function registerVoteHandler(bot: Bot<AppContext>): void {
     const data = ctx.callbackQuery.data;
     const match = CALLBACK_RE.exec(data);
 
-    if (!match) {return next();}
+    if (!match) {
+      return next();
+    }
 
     const type = match[1] === 'u' ? 'up' : 'down';
     const eventId = match[2];
