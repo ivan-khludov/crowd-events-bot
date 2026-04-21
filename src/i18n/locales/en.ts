@@ -15,6 +15,8 @@ export const en: Messages = {
       `Could not parse the date. Format must be exactly: <code>${format}</code>`,
     askTitle: 'Great. Now the event title.',
     titleEmpty: 'The title cannot be empty. Please try again.',
+    askCity: 'Which city?',
+    cityEmpty: 'The city cannot be empty. Please try again.',
     askPlace: 'And the place.',
     placeEmpty: 'The place cannot be empty. Please try again.',
     published: 'Done! The event has been posted in the group.',

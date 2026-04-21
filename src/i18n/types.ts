@@ -106,6 +106,8 @@ export interface Messages {
     invalidDate: (format: string) => string;
     askTitle: string;
     titleEmpty: string;
+    askCity: string;
+    cityEmpty: string;
     askPlace: string;
     placeEmpty: string;
     published: string;

@@ -35,6 +35,7 @@ export interface EventRow {
   creator_id: number;
   original_message_id: number;
   title: string;
+  city: string;
   place: string;
   datetime_utc: string;
   status: EventStatus;

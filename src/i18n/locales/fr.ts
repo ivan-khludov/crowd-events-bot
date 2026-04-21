@@ -15,6 +15,8 @@ export const fr: Messages = {
       `Date non comprise. Le format doit être strictement : <code>${format}</code>`,
     askTitle: "Parfait. Maintenant le titre de l'événement.",
     titleEmpty: 'Le titre ne peut pas être vide. Veuillez réessayer.',
+    askCity: 'Dans quelle ville ?',
+    cityEmpty: 'La ville ne peut pas être vide. Veuillez réessayer.',
     askPlace: 'Et le lieu.',
     placeEmpty: 'Le lieu ne peut pas être vide. Veuillez réessayer.',
     published: "Terminé ! L'événement a été publié dans le groupe.",

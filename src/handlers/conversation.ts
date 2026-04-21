@@ -65,6 +65,9 @@ export function buildEventConversation(env: Env): ConversationBuilder<AppContext
     await ctx.reply(messages.event.askTitle);
     const title = await askNonEmpty(conversation, messages.event.titleEmpty);
 
+    await ctx.reply(messages.event.askCity);
+    const city = await askNonEmpty(conversation, messages.event.cityEmpty);
+
     await ctx.reply(messages.event.askPlace);
     const place = await askNonEmpty(conversation, messages.event.placeEmpty);
 
@@ -78,6 +81,7 @@ export function buildEventConversation(env: Env): ConversationBuilder<AppContext
         creator_id: draft.creatorId,
         original_message_id: draft.originalMessageId,
         title,
+        city,
         place,
         datetime_utc: datetimeUtc,
         status: 'pending',

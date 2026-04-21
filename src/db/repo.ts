@@ -261,8 +261,8 @@ export class Repo {
       .prepare(
         `INSERT INTO events
             (id, group_chat_id, creator_id, original_message_id,
-             title, place, datetime_utc, status, vote_message_id)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`,
+             title, city, place, datetime_utc, status, vote_message_id)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`,
       )
       .bind(
         row.id,
@@ -270,6 +270,7 @@ export class Repo {
         row.creator_id,
         row.original_message_id,
         row.title,
+        row.city,
         row.place,
         row.datetime_utc,
         row.status ?? 'pending',
@@ -301,7 +302,7 @@ export class Repo {
     const row = await this.db
       .prepare(
         `SELECT id, group_chat_id, creator_id, original_message_id,
-                title, place, datetime_utc, status, vote_message_id,
+                title, city, place, datetime_utc, status, vote_message_id,
                 votes_up, votes_down, created_at
            FROM events WHERE id = ?1`,
       )
@@ -437,7 +438,7 @@ export class Repo {
     const res = await this.db
       .prepare(
         `SELECT id, group_chat_id, creator_id, original_message_id,
-                title, place, datetime_utc, status, vote_message_id,
+                title, city, place, datetime_utc, status, vote_message_id,
                 votes_up, votes_down, created_at
            FROM events
           WHERE group_chat_id = ?1

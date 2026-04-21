@@ -15,6 +15,8 @@ export const de: Messages = {
       `Datum konnte nicht gelesen werden. Format muss genau sein: <code>${format}</code>`,
     askTitle: 'Super. Jetzt der Titel der Veranstaltung.',
     titleEmpty: 'Der Titel darf nicht leer sein. Bitte versuche es erneut.',
+    askCity: 'In welcher Stadt?',
+    cityEmpty: 'Die Stadt darf nicht leer sein. Bitte versuche es erneut.',
     askPlace: 'Und der Ort.',
     placeEmpty: 'Der Ort darf nicht leer sein. Bitte versuche es erneut.',
     published: 'Fertig! Die Veranstaltung wurde in der Gruppe veröffentlicht.',

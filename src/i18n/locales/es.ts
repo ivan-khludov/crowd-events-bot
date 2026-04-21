@@ -15,6 +15,8 @@ export const es: Messages = {
       `No pude interpretar la fecha. El formato debe ser exactamente: <code>${format}</code>`,
     askTitle: 'Perfecto. Ahora el título del evento.',
     titleEmpty: 'El título no puede estar vacío. Inténtalo de nuevo.',
+    askCity: '¿En qué ciudad?',
+    cityEmpty: 'La ciudad no puede estar vacía. Inténtalo de nuevo.',
     askPlace: 'Y el lugar.',
     placeEmpty: 'El lugar no puede estar vacío. Inténtalo de nuevo.',
     published: '¡Listo! El evento se ha publicado en el grupo.',

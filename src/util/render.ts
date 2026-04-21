@@ -45,12 +45,14 @@ export function renderEventCard(
   const messages = t(locale);
   const title = escapeHtml(event.title);
   const place = escapeHtml(event.place);
+  const city = event.city ? escapeHtml(event.city) : '';
   const when = formatLocalDateTime(event.datetime_utc, tz, locale);
   const link = buildPostLink(event.group_chat_id, event.original_message_id, groupUsername);
+  const location = city ? `${city} / ${place}` : place;
 
   return (
     `<b>${title}</b>\n` +
-    `📅 ${when} / ${place}\n` +
+    `📅 ${when} / ${location}\n` +
     `🔗 <a href="${link}">${messages.card.originalLinkText}</a>\n` +
     `👍 ${event.votes_up} | 👎 ${event.votes_down}`
   );
@@ -141,9 +143,11 @@ export function renderWeeklyDigest(
       for (const e of dayEvents) {
         const title = escapeHtml(e.title);
         const place = escapeHtml(e.place);
+        const city = e.city ? escapeHtml(e.city) : '';
         const time = formatLocalTime(e.datetime_utc, tz);
         const link = buildPostLink(e.group_chat_id, e.original_message_id, groupUsername);
-        bodyParts.push(`• <a href="${link}">${title}</a> / ${place}, ${time}`);
+        const location = city ? `${city} / ${place}` : place;
+        bodyParts.push(`• <a href="${link}">${title}</a> / ${location}, ${time}`);
       }
     }
   }
@@ -186,9 +190,11 @@ export function renderDailyDigest(
     for (const e of events) {
       const title = escapeHtml(e.title);
       const place = escapeHtml(e.place);
+      const city = e.city ? escapeHtml(e.city) : '';
       const time = formatLocalTime(e.datetime_utc, tz);
       const link = buildPostLink(e.group_chat_id, e.original_message_id, groupUsername);
-      lines.push(`• <a href="${link}">${title}</a> / ${place}, ${time}`);
+      const location = city ? `${city} / ${place}` : place;
+      lines.push(`• <a href="${link}">${title}</a> / ${location}, ${time}`);
     }
   }
 
