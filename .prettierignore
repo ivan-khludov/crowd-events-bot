@@ -1,0 +1,8 @@
+node_modules
+.wrangler
+dist
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+bun.lockb
+migrations/**/*.sql

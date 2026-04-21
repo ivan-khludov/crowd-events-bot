@@ -1,0 +1,39 @@
+{
+  "name": "crowd-events-bot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Telegram bot for community-driven events aggregation on Cloudflare Workers.",
+  "type": "module",
+  "packageManager": "pnpm@10.32.1",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "preinstall": "npx only-allow pnpm",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate": "wrangler d1 migrations apply crowd-events",
+    "db:migrate:local": "wrangler d1 migrations apply crowd-events --local",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check"
+  },
+  "dependencies": {
+    "@grammyjs/conversations": "2.1.1",
+    "dayjs": "1.11.20",
+    "grammy": "1.42.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "4.20260421.1",
+    "eslint": "10.2.1",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-jsdoc": "62.9.0",
+    "prettier": "3.8.3",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.59.0",
+    "wrangler": "4.84.0"
+  }
+}

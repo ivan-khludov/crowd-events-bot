@@ -1,0 +1,20 @@
+name = "crowd-events-bot"
+main = "src/index.ts"
+compatibility_date = "2026-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Cron trigger: every 10 minutes refresh the weekly pinned digest.
+[triggers]
+crons = ["*/10 * * * *"]
+
+# D1 database binding. Create with `wrangler d1 create crowd-events`
+# and replace `database_id` with the value Wrangler prints.
+[[d1_databases]]
+binding = "DB"
+database_name = "crowd-events"
+database_id = "REPLACE_WITH_D1_ID"
+migrations_dir = "migrations"
+
+# Secrets are provided via `wrangler secret put`:
+#   - BOT_TOKEN       Telegram bot token from @BotFather
+#   - WEBHOOK_SECRET  Random string used as Telegram secret_token
