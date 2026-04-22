@@ -12,10 +12,10 @@ import { D1SessionStorage } from './db/sessionStore.js';
 import type { Env } from './env.js';
 import { registerAdminHandlers } from './handlers/admin.js';
 import {
+  buildDigestBlockConversation,
   buildEventConversation,
-  buildPrefixConversation,
+  DIGEST_BLOCK_CONVERSATION_ID,
   EVENT_CONVERSATION_ID,
-  PREFIX_CONVERSATION_ID,
   registerDmKickoff,
 } from './handlers/conversation.js';
 import { registerMentionHandler } from './handlers/mention.js';
@@ -71,7 +71,9 @@ export function createBot(env: Env): Bot<AppContext> {
   );
 
   bot.use(createConversation(buildEventConversation(env), { id: EVENT_CONVERSATION_ID }));
-  bot.use(createConversation(buildPrefixConversation(env), { id: PREFIX_CONVERSATION_ID }));
+  bot.use(
+    createConversation(buildDigestBlockConversation(env), { id: DIGEST_BLOCK_CONVERSATION_ID }),
+  );
 
   registerMentionHandler(bot);
   registerAdminHandlers(bot);

@@ -9,8 +9,10 @@ import {
   SUPPORTED_LOCALES,
   type Locale,
 } from '../i18n/types.js';
+import type { DigestBlockField } from '../types.js';
 import { formatLocalDayLabel, formatLocalTime, isValidIanaTz } from '../util/date.js';
 import { logWarn } from '../util/log.js';
+import { MAX_DIGEST_BLOCK_LEN } from './conversation.js';
 
 /**
  * Allowed range for the `vote_threshold` setting.
@@ -23,14 +25,15 @@ const THRESHOLD_RANGE = { min: 1, max: 1000 } as const;
 const LIMIT_RANGE = { min: 1, max: 50 } as const;
 
 /**
- * Maximum preview length for the `digest_prefix` inside `/settings`.
+ * Maximum preview length for the `digest_header` / `digest_footer`
+ * snippets inside `/settings`.
  */
-const PREFIX_PREVIEW_LEN = 80;
+const BLOCK_PREVIEW_LEN = 80;
 
 /**
  * Registers per-group admin commands: `/settings`, `/threshold`, `/limit`,
- * `/timezone` (alias `/tz`), `/prefix`, `/clearprefix`, `/language` (alias
- * `/lang`).
+ * `/timezone` (alias `/tz`), `/header`, `/clearheader`, `/footer`,
+ * `/clearfooter`, `/language` (alias `/lang`).
  *
  * The commands only respond in group/supergroup chats and require the issuing
  * user to be a creator or administrator of the chat.
@@ -48,14 +51,14 @@ export function registerAdminHandlers(bot: Bot<AppContext>): void {
     const group = await ctx.repo.upsertGroupMeta(chatId, chatUsername, ctx.chat.title ?? null);
     const locale = coerceLocale(group.language);
     const messages = t(locale);
-    const prefixLine = renderPrefixPreview(group.digest_prefix, locale);
     await ctx.reply(
       messages.admin.settings({
         chatId: group.chat_id,
         tz: escapeHtml(group.tz),
         threshold: group.vote_threshold,
         limit: group.daily_limit,
-        prefixPreview: prefixLine,
+        headerPreview: renderBlockPreview(group.digest_header, locale),
+        footerPreview: renderBlockPreview(group.digest_footer, locale),
         languageLabel: LOCALE_NATIVE_NAMES[locale],
       }),
       { parse_mode: 'HTML', reply_parameters: { message_id: ctx.msg.message_id } },
@@ -201,44 +204,85 @@ export function registerAdminHandlers(bot: Bot<AppContext>): void {
   bot.command('language', languageHandler);
   bot.command('lang', languageHandler);
 
-  bot.command('prefix', async (ctx) => {
-    if (!(await ensureGroupAdmin(ctx))) {
-      return;
-    }
+  const digestBlockHandler =
+    (field: DigestBlockField) =>
+    async (ctx: CommandContext<AppContext>): Promise<void> => {
+      if (!(await ensureGroupAdmin(ctx))) {
+        return;
+      }
 
-    const chatId = ctx.chat.id;
-    const chatUsername = 'username' in ctx.chat ? (ctx.chat.username ?? null) : null;
-    const group = await ctx.repo.upsertGroupMeta(chatId, chatUsername, ctx.chat.title ?? null);
-    const locale = coerceLocale(group.language);
-    const messages = t(locale);
+      const chatId = ctx.chat.id;
+      const chatUsername = 'username' in ctx.chat ? (ctx.chat.username ?? null) : null;
+      const group = await ctx.repo.upsertGroupMeta(chatId, chatUsername, ctx.chat.title ?? null);
+      const locale = coerceLocale(group.language);
+      const messages = t(locale);
 
-    await ctx.repo.putPendingDraft(ctx.from!.id, {
-      kind: 'prefix',
-      groupChatId: chatId,
-      creatorId: ctx.from!.id,
-      tz: group.tz,
-      locale,
-    });
+      let dmPrimed = false;
 
-    const me = await ctx.api.getMe();
-    const deepLink = `https://t.me/${me.username}?start=prefix`;
-    await ctx.reply(messages.admin.prefixAskDm, {
-      reply_parameters: { message_id: ctx.msg.message_id },
-      reply_markup: {
-        inline_keyboard: [[{ text: messages.mention.openDmButton, url: deepLink }]],
-      },
-    });
-  });
+      try {
+        await ctx.api.sendMessage(
+          ctx.from!.id,
+          messages.digestBlock.ask(field, MAX_DIGEST_BLOCK_LEN),
+        );
+        dmPrimed = true;
+      } catch {
+        // DM delivery failed (admin hasn't opened the bot or blocked it).
+        // Fall back to the in-group invite below. Only Telegram send errors
+        // are swallowed here — database errors from `putPendingDraft` must
+        // propagate so the caller can retry / log instead of silently
+        // degrading to a non-primed flow.
+      }
 
-  bot.command('clearprefix', async (ctx) => {
+      await ctx.repo.putPendingDraft(ctx.from!.id, {
+        kind: 'digestBlock',
+        groupChatId: chatId,
+        creatorId: ctx.from!.id,
+        tz: group.tz,
+        locale,
+        field,
+        ...(dmPrimed ? { primed: true } : {}),
+      });
+
+      if (dmPrimed) {
+        return;
+      }
+
+      const me = await ctx.api.getMe();
+      const deepLink = `https://t.me/${me.username}?start=${field}`;
+      const prompt = field === 'header' ? messages.admin.headerAskDm : messages.admin.footerAskDm;
+      await ctx.reply(prompt, {
+        reply_parameters: { message_id: ctx.msg.message_id },
+        reply_markup: {
+          inline_keyboard: [[{ text: messages.mention.openDmButton, url: deepLink }]],
+        },
+      });
+    };
+
+  bot.command('header', digestBlockHandler('header'));
+  bot.command('footer', digestBlockHandler('footer'));
+
+  bot.command('clearheader', async (ctx) => {
     if (!(await ensureGroupAdmin(ctx))) {
       return;
     }
 
     const locale = await resolveGroupLocale(ctx);
     const messages = t(locale);
-    await ctx.repo.setDigestPrefix(ctx.chat.id, null);
-    await ctx.reply(messages.admin.clearPrefixOk, {
+    await ctx.repo.setDigestHeader(ctx.chat.id, null);
+    await ctx.reply(messages.admin.clearHeaderOk, {
+      reply_parameters: { message_id: ctx.msg.message_id },
+    });
+  });
+
+  bot.command('clearfooter', async (ctx) => {
+    if (!(await ensureGroupAdmin(ctx))) {
+      return;
+    }
+
+    const locale = await resolveGroupLocale(ctx);
+    const messages = t(locale);
+    await ctx.repo.setDigestFooter(ctx.chat.id, null);
+    await ctx.reply(messages.admin.clearFooterOk, {
       reply_parameters: { message_id: ctx.msg.message_id },
     });
   });
@@ -339,24 +383,25 @@ function parseIntArg(raw: string | undefined): number | null {
 }
 
 /**
- * Renders a short preview of the configured digest prefix for `/settings`.
+ * Renders a short preview of a configured digest header/footer block for
+ * the `/settings` summary.
  *
- * @param html Stored prefix HTML or `null`.
+ * @param html Stored block HTML or `null`.
  * @param locale UI locale used for the preview labels.
  * @returns Human-readable summary such as `нет` or `задан, 42 симв (<code>...</code>)`.
  */
-function renderPrefixPreview(html: string | null, locale: Locale): string {
+function renderBlockPreview(html: string | null, locale: Locale): string {
   const messages = t(locale);
 
   if (!html || html.trim().length === 0) {
-    return messages.admin.prefixPreviewNone;
+    return messages.admin.blockPreviewNone;
   }
 
   const plain = stripTags(html).replace(/\s+/g, ' ').trim();
   const snippet =
-    plain.length <= PREFIX_PREVIEW_LEN ? plain : `${plain.slice(0, PREFIX_PREVIEW_LEN)}…`;
+    plain.length <= BLOCK_PREVIEW_LEN ? plain : `${plain.slice(0, BLOCK_PREVIEW_LEN)}…`;
 
-  return messages.admin.prefixPreviewSet(html.length, escapeHtml(snippet));
+  return messages.admin.blockPreviewSet(html.length, escapeHtml(snippet));
 }
 
 /**

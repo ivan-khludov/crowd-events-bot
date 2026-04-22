@@ -17,11 +17,13 @@ Cloudflare Cron Triggers.
   `approved`.
 - Every 10 minutes a cron tick recomputes the current week (in each group's
   own timezone) and edits (or re-posts and re-pins) a pinned weekly digest
-  grouped by day. Admins can prepend a custom HTML block (welcome text, rules
-  link, etc.) above the schedule via `/prefix`.
+  grouped by day. Admins can wrap the schedule with custom HTML blocks
+  (welcome text, rules link, etiquette reminder, etc.) above and below the
+  schedule via `/header` and `/footer`.
 - Per-user submission limit: `daily_limit` events per 24h (in the group's tz).
 - Admin commands in the group: `/settings`, `/threshold <N>`, `/limit <N>`,
-  `/timezone <IANA>`, `/language <code>`, `/prefix`, `/clearprefix`.
+  `/timezone <IANA>`, `/language <code>`, `/header`, `/clearheader`,
+  `/footer`, `/clearfooter`.
 - UI is available in English (default), German, French, Spanish and Russian.
   Admins pick the per-group language with `/language`.
 
@@ -36,30 +38,25 @@ Cloudflare Cron Triggers.
 
 ## Package manager
 
-The repository uses **pnpm** as the primary package manager. A
-`pnpm-lock.yaml` is the only lockfile in the repo and the `preinstall` script
-(`npx only-allow pnpm`) blocks other managers to keep the lockfile consistent.
+The repository uses **pnpm**. A `pnpm-lock.yaml` is the only lockfile in the
+repo and the `preinstall` script (`npx only-allow pnpm`) blocks other managers
+to keep the lockfile consistent.
 
-If you want to run this project with a different manager, remove the
-`preinstall` hook locally (or pass `--ignore-scripts` on install) and then use
-the corresponding command from the table below.
+Common scripts:
 
-| action       | pnpm (primary)      | npm                    | yarn                | bun                    |
-| ------------ | ------------------- | ---------------------- | ------------------- | ---------------------- |
-| install      | `pnpm install`      | `npm install`          | `yarn`              | `bun install`          |
-| type check   | `pnpm typecheck`    | `npm run typecheck`    | `yarn typecheck`    | `bun run typecheck`    |
-| lint         | `pnpm lint`         | `npm run lint`         | `yarn lint`         | `bun run lint`         |
-| lint (fix)   | `pnpm lint:fix`     | `npm run lint:fix`     | `yarn lint:fix`     | `bun run lint:fix`     |
-| format       | `pnpm format`       | `npm run format`       | `yarn format`       | `bun run format`       |
-| format check | `pnpm format:check` | `npm run format:check` | `yarn format:check` | `bun run format:check` |
-| full check   | `pnpm check`        | `npm run check`        | `yarn check`        | `bun run check`        |
-| dev          | `pnpm dev`          | `npm run dev`          | `yarn dev`          | `bun run dev`          |
-| deploy       | `pnpm deploy`       | `npm run deploy`       | `yarn deploy`       | `bun run deploy`       |
+| action       | command             |
+| ------------ | ------------------- |
+| install      | `pnpm install`      |
+| type check   | `pnpm typecheck`    |
+| lint         | `pnpm lint`         |
+| lint (fix)   | `pnpm lint:fix`     |
+| format       | `pnpm format`       |
+| format check | `pnpm format:check` |
+| full check   | `pnpm check`        |
+| dev          | `pnpm dev`          |
+| deploy       | `pnpm deploy`       |
 
 ## Initial setup
-
-All commands below assume **pnpm**; swap in the equivalent from the table above
-if you use another manager.
 
 1. Install dependencies:
    ```bash
@@ -112,7 +109,8 @@ if you use another manager.
 Issued in the group chat by a user who is `creator` or `administrator`:
 
 - `/settings` — prints the current `chat_id`, `language`, `tz`,
-  `vote_threshold`, `daily_limit` and a preview of the digest prefix.
+  `vote_threshold`, `daily_limit` and a preview of the digest header and
+  footer.
 - `/threshold <N>` — sets `vote_threshold` (`1 ≤ N ≤ 1000`). Example:
   `/threshold 15`.
 - `/limit <N>` — sets `daily_limit` (`1 ≤ N ≤ 50`). Example: `/limit 5`.
@@ -129,16 +127,19 @@ Issued in the group chat by a user who is `creator` or `administrator`:
   string the bot emits for the group: DM event-submission flow, admin
   replies, vote-card labels, weekly pinned digest (weekday and month names
   included) and error messages.
-- `/prefix` — starts the digest-prefix editor. The bot DMs the admin and
+- `/header` — starts the digest header editor. The bot DMs the admin and
   expects a single message; its text, formatting (bold, italic, underline,
   strikethrough, spoiler, code, pre, blockquote) and hyperlinks are preserved
   and rendered above "События на неделе:" in the pinned digest. Max 1500
   characters.
-- `/clearprefix` — removes the digest prefix.
+- `/clearheader` — removes the digest header.
+- `/footer` — same as `/header` but the block is rendered below the schedule
+  in the pinned digest, separated by a blank line. Max 1500 characters.
+- `/clearfooter` — removes the digest footer.
 
 Defaults if the group has never had the commands invoked: `language = en`,
 `tz = Europe/Moscow`, `vote_threshold = 10`, `daily_limit = 3`, no digest
-prefix.
+header and no digest footer.
 
 ## Bot administration (superadmin)
 
@@ -221,7 +222,9 @@ crowd-events-bot/
 │   ├── 0002_customization.sql   # adds groups.tz and groups.digest_prefix
 │   ├── 0003_language.sql        # adds groups.language (default 'en')
 │   ├── 0004_daily_digest.sql    # adds groups.last_daily_digest_day
-│   └── 0005_allowlist.sql       # adds allowed_chats table
+│   ├── 0005_allowlist.sql       # adds allowed_chats table
+│   ├── 0006_event_city.sql      # adds events.city
+│   └── 0007_header_footer.sql   # renames groups.digest_prefix → digest_header, adds digest_footer
 └── src/
     ├── index.ts            # fetch + scheduled entrypoints
     ├── bot.ts              # grammY bot composition, middleware
@@ -229,10 +232,11 @@ crowd-events-bot/
     ├── types.ts            # EventRow, GroupRow, EventDraft, PendingDraft, AllowedChatRow, ...
     ├── handlers/
     │   ├── mention.ts      # @bot reply → stash pending draft + DM deeplink
-    │   ├── conversation.ts # FSM: event + digest-prefix conversations
+    │   ├── conversation.ts # FSM: event + digest header/footer conversations
     │   ├── vote.ts         # callback_query → vote, update message, approve
-    │   ├── admin.ts        # /settings, /threshold, /limit, /tz, /language, /prefix
+    │   ├── admin.ts        # /settings, /threshold, /limit, /tz, /language, /header, /footer
     │   ├── superadmin.ts   # allowlist guard + /allow /disallow /allowed /whereami
+    │   ├── daily.ts        # cron: post the "events today" announcement per group
     │   └── weekly.ts       # cron: build/edit/pin the weekly digest
     ├── i18n/
     │   ├── index.ts        # t(locale), bundle registry

@@ -20,27 +20,44 @@ export const fr: Messages = {
     placeEmpty: 'Le lieu ne peut pas être vide. Veuillez réessayer.',
     published: "Terminé ! L'événement a été publié dans le groupe.",
   },
-  prefix: {
-    noDraft: 'Rien à configurer. Lancez /prefix dans le groupe.',
-    ask: (maxLen) =>
-      'Envoyez un seul message — son texte apparaîtra au-dessus du programme des événements dans ' +
-      'le message épinglé. Le formatage Telegram est préservé : gras, italique, souligné, barré, ' +
-      'spoiler, chasse fixe, bloc de citation et liens hypertexte.\n\n' +
-      `Limite : ${maxLen} caractères. Envoyez /cancel pour annuler.`,
-    cancelled: 'Annulé. Le préfixe est inchangé.',
+  digestBlock: {
+    noDraft: 'Rien à configurer. Lancez /header ou /footer dans le groupe.',
+    ask: (field, maxLen) => {
+      const position = field === 'header' ? 'au-dessus du' : 'sous le';
+      const command = field === 'header' ? '/header' : '/footer';
+
+      return (
+        `Envoyez un seul message — son texte apparaîtra ${position} programme des événements dans ` +
+        'le message épinglé. Le formatage Telegram est préservé : gras, italique, souligné, barré, ' +
+        'spoiler, chasse fixe, bloc de citation et liens hypertexte.\n\n' +
+        `Limite : ${maxLen} caractères. Envoyez /cancel pour annuler ${command}.`
+      );
+    },
+    cancelled: (field) =>
+      field === 'header' ? 'Annulé. L\u2019en-tête est inchangé.' : 'Annulé. Le pied est inchangé.',
     tooLong: (length, max) =>
       `Trop long : ${length} caractères, limite ${max}. Essayez plus court.`,
-    empty: 'Le préfixe ne peut pas être vide. Veuillez réessayer ou envoyer /cancel.',
-    saveFailed: "Impossible d'enregistrer le préfixe. Veuillez réessayer plus tard.",
-    saved: 'Préfixe enregistré. Aperçu du message épinglé pour la semaine en cours :',
-    previewHeader: '',
-    howToChange:
-      'Pour le modifier — relancez /prefix dans le groupe. Pour le supprimer — /clearprefix dans le groupe.',
+    empty: (field) =>
+      field === 'header'
+        ? 'L\u2019en-tête ne peut pas être vide. Veuillez réessayer ou envoyer /cancel.'
+        : 'Le pied ne peut pas être vide. Veuillez réessayer ou envoyer /cancel.',
+    saveFailed: (field) =>
+      field === 'header'
+        ? "Impossible d'enregistrer l\u2019en-tête. Veuillez réessayer plus tard."
+        : "Impossible d'enregistrer le pied. Veuillez réessayer plus tard.",
+    saved: (field) =>
+      field === 'header'
+        ? 'En-tête enregistré. Aperçu du message épinglé pour la semaine en cours :'
+        : 'Pied enregistré. Aperçu du message épinglé pour la semaine en cours :',
+    howToChange: (field) =>
+      field === 'header'
+        ? 'Pour le modifier — relancez /header dans le groupe. Pour le supprimer — /clearheader dans le groupe.'
+        : 'Pour le modifier — relancez /footer dans le groupe. Pour le supprimer — /clearfooter dans le groupe.',
   },
   start: {
     welcome:
       'Bonjour ! Pour proposer un événement — répondez à un message du groupe et mentionnez-moi. ' +
-      'Les administrateurs peuvent personnaliser le préfixe du message épinglé avec /prefix.',
+      'Les administrateurs peuvent personnaliser le message épinglé avec /header et /footer.',
   },
   mention: {
     limitReached: (limit) =>
@@ -88,18 +105,18 @@ export const fr: Messages = {
     onlyGroup: 'Cette commande est disponible uniquement dans un chat de groupe.',
     onlyAdmin: 'Cette commande est disponible uniquement pour les administrateurs du groupe.',
     checkFailed: 'Impossible de vérifier vos droits. Veuillez réessayer plus tard.',
-    settings: ({ chatId, tz, threshold, limit, prefixPreview, languageLabel }) =>
+    settings: ({ chatId, tz, threshold, limit, headerPreview, footerPreview, languageLabel }) =>
       [
         `chat_id: <code>${chatId}</code>`,
         `language: <b>${languageLabel}</b>`,
         `tz: <code>${tz}</code>`,
         `vote_threshold: <b>${threshold}</b>`,
         `daily_limit: <b>${limit}</b>`,
-        `digest_prefix: ${prefixPreview}`,
+        `digest_header: ${headerPreview}`,
+        `digest_footer: ${footerPreview}`,
       ].join('\n'),
-    prefixPreviewNone: '<i>aucun</i>',
-    prefixPreviewSet: (length, snippet) =>
-      `<b>défini</b>, ${length} car. (<code>${snippet}</code>)`,
+    blockPreviewNone: '<i>aucun</i>',
+    blockPreviewSet: (length, snippet) => `<b>défini</b>, ${length} car. (<code>${snippet}</code>)`,
     thresholdUsage: (min, max) =>
       `Utilisation : <code>/threshold N</code>, où ${min} ≤ N ≤ ${max}. Exemple : /threshold 15`,
     thresholdOk: (value) => `OK : vote_threshold = ${value}`,
@@ -118,10 +135,14 @@ export const fr: Messages = {
       'Essayez quelque chose depuis https://en.wikipedia.org/wiki/List_of_tz_database_time_zones',
     tzOk: (tz, time, day) =>
       `OK : fuseau horaire = <code>${tz}</code> (maintenant ${time}, ${day}).`,
-    prefixAskDm:
-      "J'ouvre l'éditeur de préfixe en privé. Cliquez sur le bouton ci-dessous et envoyez-moi le " +
+    headerAskDm:
+      "J'ouvre l'éditeur d'en-tête en privé. Cliquez sur le bouton ci-dessous et envoyez-moi le " +
       'message qui apparaîtra au-dessus du programme des événements.',
-    clearPrefixOk: 'OK : préfixe du message épinglé supprimé.',
+    footerAskDm:
+      "J'ouvre l'éditeur de pied en privé. Cliquez sur le bouton ci-dessous et envoyez-moi le " +
+      'message qui apparaîtra sous le programme des événements.',
+    clearHeaderOk: 'OK : en-tête du message épinglé supprimé.',
+    clearFooterOk: 'OK : pied du message épinglé supprimé.',
     languageUsage: (current, options) =>
       `Langue actuelle : <b>${current}</b>.\nChanger avec : <code>/language &lt;code&gt;</code>.\nOptions : ${options}.`,
     languageInvalid: (input, options) =>

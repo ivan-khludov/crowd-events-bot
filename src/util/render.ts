@@ -77,15 +77,18 @@ export function renderVoteButtonLabels(
  *
  * Events are grouped by local calendar day and sorted by time within each day.
  * When `events` is empty, a placeholder is produced so the pinned post still
- * makes sense visually. An optional `prefixHtml` is prepended verbatim so
- * group admins can add a static welcome/rules block above the schedule.
+ * makes sense visually. Optional `headerHtml` / `footerHtml` blocks are
+ * prepended above and appended below the schedule verbatim so group admins
+ * can add static welcome/rules/etiquette blocks around it. Each non-empty
+ * block is separated from the schedule by a blank line.
  *
  * @param events Approved events within the week window.
  * @param startUtc Week start in ISO UTC (Monday 00:00 local).
  * @param endUtc Exclusive week end in ISO UTC.
  * @param tz IANA timezone used for grouping and formatting.
  * @param locale UI locale.
- * @param prefixHtml Optional pre-rendered HTML prefix, or `null`/`undefined`.
+ * @param headerHtml Optional pre-rendered HTML block shown above the schedule.
+ * @param footerHtml Optional pre-rendered HTML block shown below the schedule.
  * @param groupUsername Optional group username for per-event links.
  * @returns HTML message body.
  */
@@ -95,7 +98,8 @@ export function renderWeeklyDigest(
   endUtc: string,
   tz: string,
   locale: Locale,
-  prefixHtml?: string | null,
+  headerHtml?: string | null,
+  footerHtml?: string | null,
   groupUsername?: string | null,
 ): string {
   const messages = t(locale);
@@ -153,13 +157,21 @@ export function renderWeeklyDigest(
   }
 
   const body = bodyParts.join('\n');
-  const prefix = prefixHtml?.trim();
+  const headerBlock = headerHtml?.trim() ?? '';
+  const footerBlock = footerHtml?.trim() ?? '';
+  const sections: string[] = [];
 
-  if (prefix && prefix.length > 0) {
-    return `${prefix}\n\n${body}`;
+  if (headerBlock.length > 0) {
+    sections.push(headerBlock);
   }
 
-  return body;
+  sections.push(body);
+
+  if (footerBlock.length > 0) {
+    sections.push(footerBlock);
+  }
+
+  return sections.join('\n\n');
 }
 
 /**

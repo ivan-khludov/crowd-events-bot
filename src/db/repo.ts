@@ -30,7 +30,7 @@ export class Repo {
       .prepare(
         `SELECT chat_id, username, title, vote_threshold, daily_limit,
                 pinned_digest_message_id, last_digest_week_start,
-                tz, digest_prefix, language, last_daily_digest_day
+                tz, digest_header, digest_footer, language, last_daily_digest_day
            FROM groups WHERE chat_id = ?`,
       )
       .bind(chatId)
@@ -166,7 +166,7 @@ export class Repo {
       .prepare(
         `SELECT chat_id, username, title, vote_threshold, daily_limit,
                 pinned_digest_message_id, last_digest_week_start,
-                tz, digest_prefix, language, last_daily_digest_day
+                tz, digest_header, digest_footer, language, last_daily_digest_day
            FROM groups`,
       )
       .all<GroupRow>();
@@ -213,18 +213,37 @@ export class Repo {
   }
 
   /**
-   * Updates the HTML prefix that is prepended to the weekly pinned digest.
+   * Updates the HTML header that is prepended to the weekly pinned digest.
    *
    * @param chatId Telegram chat id of the group.
-   * @param html Pre-rendered HTML snippet, or `null` to remove the prefix.
+   * @param html Pre-rendered HTML snippet, or `null` to remove the header.
    */
-  async setDigestPrefix(chatId: number, html: string | null): Promise<void> {
+  async setDigestHeader(chatId: number, html: string | null): Promise<void> {
     await this.db
       .prepare(
-        `INSERT INTO groups (chat_id, digest_prefix)
+        `INSERT INTO groups (chat_id, digest_header)
              VALUES (?1, ?2)
          ON CONFLICT(chat_id) DO UPDATE SET
-             digest_prefix = excluded.digest_prefix,
+             digest_header = excluded.digest_header,
+             updated_at    = strftime('%Y-%m-%dT%H:%M:%fZ','now')`,
+      )
+      .bind(chatId, html)
+      .run();
+  }
+
+  /**
+   * Updates the HTML footer that is appended below the weekly pinned digest.
+   *
+   * @param chatId Telegram chat id of the group.
+   * @param html Pre-rendered HTML snippet, or `null` to remove the footer.
+   */
+  async setDigestFooter(chatId: number, html: string | null): Promise<void> {
+    await this.db
+      .prepare(
+        `INSERT INTO groups (chat_id, digest_footer)
+             VALUES (?1, ?2)
+         ON CONFLICT(chat_id) DO UPDATE SET
+             digest_footer = excluded.digest_footer,
              updated_at    = strftime('%Y-%m-%dT%H:%M:%fZ','now')`,
       )
       .bind(chatId, html)

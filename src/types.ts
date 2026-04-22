@@ -21,7 +21,8 @@ export interface GroupRow {
   pinned_digest_message_id: number | null;
   last_digest_week_start: string | null;
   tz: string;
-  digest_prefix: string | null;
+  digest_header: string | null;
+  digest_footer: string | null;
   language: string;
   last_daily_digest_day: string | null;
 }
@@ -67,15 +68,29 @@ export interface EventDraft {
 }
 
 /**
- * Conversation starting payload for the pinned-digest prefix editor. Saved
- * when an admin runs `/prefix` in a group so the DM kickoff can enter the
- * prefix conversation for the correct group.
+ * Which static block around the weekly pinned digest is being edited:
+ * `header` is prepended above the schedule, `footer` is appended below.
  */
-export interface PrefixDraft {
+export type DigestBlockField = 'header' | 'footer';
+
+/**
+ * Conversation starting payload for the pinned-digest header/footer editor.
+ * Saved when an admin runs `/header` or `/footer` in a group so the DM
+ * kickoff can enter the block-editor conversation for the correct group and
+ * field.
+ */
+export interface DigestBlockDraft {
   groupChatId: number;
   creatorId: number;
   tz: string;
   locale: string;
+  field: DigestBlockField;
+  /**
+   * When `true`, the admin handler has already sent the opening editor
+   * prompt directly to the admin's DM, so the conversation must skip its
+   * initial prompt and wait for the admin's reply straight away.
+   */
+  primed?: boolean;
 }
 
 /**
@@ -83,7 +98,9 @@ export interface PrefixDraft {
  * under the `pending:` key. The DM kickoff inspects `kind` to route the user
  * into the matching conversation.
  */
-export type PendingDraft = ({ kind: 'event' } & EventDraft) | ({ kind: 'prefix' } & PrefixDraft);
+export type PendingDraft =
+  | ({ kind: 'event' } & EventDraft)
+  | ({ kind: 'digestBlock' } & DigestBlockDraft);
 
 /**
  * Row of the `allowed_chats` allowlist table. Only chat ids present here are

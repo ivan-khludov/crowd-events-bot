@@ -91,9 +91,18 @@ export interface SettingsArgs {
   tz: string;
   threshold: number;
   limit: number;
-  prefixPreview: string;
+  headerPreview: string;
+  footerPreview: string;
   languageLabel: string;
 }
+
+/**
+ * Which static block around the weekly pinned digest a message targets:
+ * `header` is rendered above the schedule, `footer` below it. Mirrors the
+ * same name in `src/types.ts` to avoid a cross-module dependency, and is
+ * structurally identical so TypeScript accepts either one.
+ */
+export type DigestBlockField = 'header' | 'footer';
 
 /**
  * Full message bundle for a single locale. Every user-facing string in the
@@ -112,16 +121,15 @@ export interface Messages {
     placeEmpty: string;
     published: string;
   };
-  prefix: {
+  digestBlock: {
     noDraft: string;
-    ask: (maxLen: number) => string;
-    cancelled: string;
+    ask: (field: DigestBlockField, maxLen: number) => string;
+    cancelled: (field: DigestBlockField) => string;
     tooLong: (length: number, max: number) => string;
-    empty: string;
-    saveFailed: string;
-    saved: string;
-    previewHeader: string;
-    howToChange: string;
+    empty: (field: DigestBlockField) => string;
+    saveFailed: (field: DigestBlockField) => string;
+    saved: (field: DigestBlockField) => string;
+    howToChange: (field: DigestBlockField) => string;
   };
   start: {
     welcome: string;
@@ -155,8 +163,8 @@ export interface Messages {
     onlyAdmin: string;
     checkFailed: string;
     settings: (args: SettingsArgs) => string;
-    prefixPreviewNone: string;
-    prefixPreviewSet: (length: number, snippet: string) => string;
+    blockPreviewNone: string;
+    blockPreviewSet: (length: number, snippet: string) => string;
     thresholdUsage: (min: number, max: number) => string;
     thresholdOk: (value: number) => string;
     limitUsage: (min: number, max: number) => string;
@@ -164,8 +172,10 @@ export interface Messages {
     tzCurrent: (tz: string) => string;
     tzInvalid: (input: string) => string;
     tzOk: (tz: string, time: string, day: string) => string;
-    prefixAskDm: string;
-    clearPrefixOk: string;
+    headerAskDm: string;
+    footerAskDm: string;
+    clearHeaderOk: string;
+    clearFooterOk: string;
     languageUsage: (current: string, options: string) => string;
     languageInvalid: (input: string, options: string) => string;
     languageOk: (name: string) => string;

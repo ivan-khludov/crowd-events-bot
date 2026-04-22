@@ -20,26 +20,44 @@ export const ru: Messages = {
     placeEmpty: 'Место не может быть пустым. Попробуйте ещё раз.',
     published: 'Готово! Событие опубликовано в группе.',
   },
-  prefix: {
-    noDraft: 'Нечего настраивать. Запустите /prefix в группе.',
-    ask: (maxLen) =>
-      'Пришлите одно сообщение — его текст будет отображаться над сводкой событий в закрепе. ' +
-      'Форматирование Telegram сохранится: жирный, курсив, подчёркивание, зачёркнутый, ' +
-      'спойлер, моноширинный, блок цитаты и гиперссылки.\n\n' +
-      `Лимит: ${maxLen} символов. Отправьте /cancel, чтобы отменить.`,
-    cancelled: 'Отменено. Префикс не изменён.',
+  digestBlock: {
+    noDraft: 'Нечего настраивать. Запустите /header или /footer в группе.',
+    ask: (field, maxLen) => {
+      const position = field === 'header' ? 'над' : 'под';
+      const command = field === 'header' ? '/header' : '/footer';
+
+      return (
+        `Пришлите одно сообщение — его текст будет отображаться ${position} сводкой событий в закрепе. ` +
+        'Форматирование Telegram сохранится: жирный, курсив, подчёркивание, зачёркнутый, ' +
+        'спойлер, моноширинный, блок цитаты и гиперссылки.\n\n' +
+        `Лимит: ${maxLen} символов. Отправьте /cancel, чтобы отменить ${command}.`
+      );
+    },
+    cancelled: (field) =>
+      field === 'header' ? 'Отменено. Шапка не изменена.' : 'Отменено. Подвал не изменён.',
     tooLong: (length, max) =>
       `Слишком длинно: ${length} символов, лимит ${max}. Попробуйте короче.`,
-    empty: 'Префикс не может быть пустым. Попробуйте ещё раз или отправьте /cancel.',
-    saveFailed: 'Не удалось сохранить префикс. Попробуйте позже.',
-    saved: 'Префикс сохранён. Превью закрепа на текущую неделю:',
-    previewHeader: '',
-    howToChange: 'Чтобы изменить — снова /prefix в группе. Чтобы убрать — /clearprefix в группе.',
+    empty: (field) =>
+      field === 'header'
+        ? 'Шапка не может быть пустой. Попробуйте ещё раз или отправьте /cancel.'
+        : 'Подвал не может быть пустым. Попробуйте ещё раз или отправьте /cancel.',
+    saveFailed: (field) =>
+      field === 'header'
+        ? 'Не удалось сохранить шапку. Попробуйте позже.'
+        : 'Не удалось сохранить подвал. Попробуйте позже.',
+    saved: (field) =>
+      field === 'header'
+        ? 'Шапка сохранена. Превью закрепа на текущую неделю:'
+        : 'Подвал сохранён. Превью закрепа на текущую неделю:',
+    howToChange: (field) =>
+      field === 'header'
+        ? 'Чтобы изменить — снова /header в группе. Чтобы убрать — /clearheader в группе.'
+        : 'Чтобы изменить — снова /footer в группе. Чтобы убрать — /clearfooter в группе.',
   },
   start: {
     welcome:
       'Привет! Чтобы предложить событие — ответьте на пост в группе и упомяните меня. ' +
-      'Админы групп могут настроить префикс закрепа командой /prefix.',
+      'Админы групп могут настроить закреп командами /header и /footer.',
   },
   mention: {
     limitReached: (limit) => `Лимит ${limit} событий в день исчерпан. Попробуйте завтра.`,
@@ -85,17 +103,18 @@ export const ru: Messages = {
     onlyGroup: 'Команда доступна только в групповом чате.',
     onlyAdmin: 'Команда доступна только админам группы.',
     checkFailed: 'Не удалось проверить права. Попробуйте позже.',
-    settings: ({ chatId, tz, threshold, limit, prefixPreview, languageLabel }) =>
+    settings: ({ chatId, tz, threshold, limit, headerPreview, footerPreview, languageLabel }) =>
       [
         `chat_id: <code>${chatId}</code>`,
         `language: <b>${languageLabel}</b>`,
         `tz: <code>${tz}</code>`,
         `vote_threshold: <b>${threshold}</b>`,
         `daily_limit: <b>${limit}</b>`,
-        `digest_prefix: ${prefixPreview}`,
+        `digest_header: ${headerPreview}`,
+        `digest_footer: ${footerPreview}`,
       ].join('\n'),
-    prefixPreviewNone: '<i>нет</i>',
-    prefixPreviewSet: (length, snippet) => `<b>задан</b>, ${length} симв (<code>${snippet}</code>)`,
+    blockPreviewNone: '<i>нет</i>',
+    blockPreviewSet: (length, snippet) => `<b>задан</b>, ${length} симв (<code>${snippet}</code>)`,
     thresholdUsage: (min, max) =>
       `Использование: <code>/threshold N</code>, где ${min} ≤ N ≤ ${max}. Пример: /threshold 15`,
     thresholdOk: (value) => `OK: vote_threshold = ${value}`,
@@ -113,10 +132,14 @@ export const ru: Messages = {
       `Не похоже на корректный IANA-идентификатор: <code>${input}</code>. ` +
       'Попробуйте что-то из https://en.wikipedia.org/wiki/List_of_tz_database_time_zones',
     tzOk: (tz, time, day) => `OK: таймзона = <code>${tz}</code> (сейчас ${time}, ${day}).`,
-    prefixAskDm:
-      'Открою редактор префикса в личке. Нажмите кнопку ниже и пришлите мне сообщение, которое ' +
+    headerAskDm:
+      'Открою редактор шапки в личке. Нажмите кнопку ниже и пришлите мне сообщение, которое ' +
       'будет показываться над сводкой событий.',
-    clearPrefixOk: 'OK: префикс закрепа очищен.',
+    footerAskDm:
+      'Открою редактор подвала в личке. Нажмите кнопку ниже и пришлите мне сообщение, которое ' +
+      'будет показываться под сводкой событий.',
+    clearHeaderOk: 'OK: шапка закрепа очищена.',
+    clearFooterOk: 'OK: подвал закрепа очищен.',
     languageUsage: (current, options) =>
       `Текущий язык: <b>${current}</b>.\nПоменять: <code>/language &lt;code&gt;</code>.\nОпции: ${options}.`,
     languageInvalid: (input, options) =>

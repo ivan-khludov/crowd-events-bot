@@ -16,9 +16,10 @@ import { renderWeeklyDigest } from '../util/render.js';
  * 1. Resolves the current local-week `[startUtc, endUtc)` window using the
  *    group's configured `tz`.
  * 2. Selects all approved events that fall inside the window.
- * 3. Renders a digest post (optionally prefixed with the group's
- *    `digest_prefix`) and either edits the currently pinned message (same
- *    week) or posts a fresh one and pins it (new week or no pin).
+ * 3. Renders a digest post (optionally wrapped with the group's
+ *    `digest_header` / `digest_footer` blocks) and either edits the currently
+ *    pinned message (same week) or posts a fresh one and pins it (new week
+ *    or no pin).
  *
  * The function is intentionally idempotent and safe to run every cron tick.
  *
@@ -56,7 +57,8 @@ async function refreshGroupDigest(api: Api, repo: Repo, group: GroupRow): Promis
     endUtc,
     group.tz,
     coerceLocale(group.language),
-    group.digest_prefix,
+    group.digest_header,
+    group.digest_footer,
     group.username,
   );
 

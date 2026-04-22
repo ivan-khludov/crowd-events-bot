@@ -6,7 +6,7 @@ import { Repo } from '../db/repo.js';
 import type { Env } from '../env.js';
 import { t } from '../i18n/index.js';
 import { coerceLocale, type Locale } from '../i18n/types.js';
-import type { EventDraft, EventRow, PrefixDraft } from '../types.js';
+import type { DigestBlockDraft, EventDraft, EventRow } from '../types.js';
 import { INPUT_FORMAT, parseLocalDate, weekBounds } from '../util/date.js';
 import { entitiesToHtml, type InputEntity } from '../util/entities.js';
 import { renderEventCard, renderVoteButtonLabels, renderWeeklyDigest } from '../util/render.js';
@@ -17,9 +17,11 @@ import { renderEventCard, renderVoteButtonLabels, renderWeeklyDigest } from '../
 export const EVENT_CONVERSATION_ID = 'eventConversation';
 
 /**
- * Identifier used to register and enter the digest-prefix editor conversation.
+ * Identifier used to register and enter the digest header/footer editor
+ * conversation. The same conversation handles both blocks — the concrete
+ * field is carried by the {@link DigestBlockDraft} payload.
  */
-export const PREFIX_CONVERSATION_ID = 'prefixConversation';
+export const DIGEST_BLOCK_CONVERSATION_ID = 'digestBlockConversation';
 
 /**
  * Maximum accepted length of a title or place entry.
@@ -27,9 +29,11 @@ export const PREFIX_CONVERSATION_ID = 'prefixConversation';
 const MAX_FIELD_LEN = 200;
 
 /**
- * Maximum accepted length of the raw digest prefix text (pre-HTML conversion).
+ * Maximum accepted length of the raw digest header/footer text
+ * (pre-HTML conversion). Exported so the /header and /footer handlers can
+ * render the same limit in their opening prompt.
  */
-const MAX_PREFIX_LEN = 1500;
+export const MAX_DIGEST_BLOCK_LEN = 1500;
 
 /**
  * Event-conversation builder factory.
@@ -111,78 +115,100 @@ export function buildEventConversation(env: Env): ConversationBuilder<AppContext
 }
 
 /**
- * Prefix-conversation builder factory.
+ * Digest header/footer conversation builder factory.
  *
- * Asks the admin to send the message that will appear above the weekly
- * schedule in the pinned digest. Any Telegram text formatting present in
- * the message (bold, italic, underline, strike, spoiler, code, pre, links,
- * blockquote) is preserved via entity-to-HTML conversion.
+ * Asks the admin to send the message that will appear above (header) or
+ * below (footer) the weekly schedule in the pinned digest. Any Telegram
+ * text formatting present in the message (bold, italic, underline, strike,
+ * spoiler, code, pre, links, blockquote) is preserved via entity-to-HTML
+ * conversion. The concrete field being edited is taken from
+ * `draft.field` on entry.
  *
  * @param env Worker environment captured from the surrounding request.
  * @returns A conversation builder compatible with `createConversation`.
  */
-export function buildPrefixConversation(env: Env): ConversationBuilder<AppContext, Context> {
-  return async function prefixConversation(
+export function buildDigestBlockConversation(env: Env): ConversationBuilder<AppContext, Context> {
+  return async function digestBlockConversation(
     conversation: Conversation<AppContext, Context>,
     ctx: Context,
-    draftArg?: PrefixDraft,
+    draftArg?: DigestBlockDraft,
   ): Promise<void> {
     const draft = draftArg ?? null;
     const locale: Locale = coerceLocale(draft?.locale);
     const messages = t(locale);
 
     if (!draft) {
-      await ctx.reply(messages.prefix.noDraft);
+      await ctx.reply(messages.digestBlock.noDraft);
 
       return;
     }
 
-    await ctx.reply(messages.prefix.ask(MAX_PREFIX_LEN));
+    const field = draft.field;
+
+    if (!draft.primed) {
+      await ctx.reply(messages.digestBlock.ask(field, MAX_DIGEST_BLOCK_LEN));
+    }
+    // When the draft is primed, the /header or /footer handler has already
+    // delivered this exact prompt to the admin's DM, so repeating it here
+    // would only duplicate the question.
 
     for (;;) {
       const msg = await conversation.waitFor(':text');
       const text = msg.msg.text;
 
       if (text.trim() === '/cancel') {
-        await msg.reply(messages.prefix.cancelled);
+        await msg.reply(messages.digestBlock.cancelled(field));
 
         return;
       }
 
-      if (text.length > MAX_PREFIX_LEN) {
-        await msg.reply(messages.prefix.tooLong(text.length, MAX_PREFIX_LEN));
+      if (text.length > MAX_DIGEST_BLOCK_LEN) {
+        await msg.reply(messages.digestBlock.tooLong(text.length, MAX_DIGEST_BLOCK_LEN));
         continue;
       }
 
       if (text.trim().length === 0) {
-        await msg.reply(messages.prefix.empty);
+        await msg.reply(messages.digestBlock.empty(field));
         continue;
       }
 
       const entities = msg.msg.entities as InputEntity[] | undefined;
       const html = entitiesToHtml(text, entities);
 
-      const saved = await conversation.external(async (): Promise<boolean> => {
+      const savedGroup = await conversation.external(async () => {
         const repo = new Repo(env.DB);
-        await repo.setDigestPrefix(draft.groupChatId, html);
 
-        return true;
+        if (field === 'header') {
+          await repo.setDigestHeader(draft.groupChatId, html);
+        } else {
+          await repo.setDigestFooter(draft.groupChatId, html);
+        }
+
+        return repo.getGroup(draft.groupChatId);
       });
 
-      if (!saved) {
-        await msg.reply(messages.prefix.saveFailed);
+      if (!savedGroup) {
+        await msg.reply(messages.digestBlock.saveFailed(field));
 
         return;
       }
 
       const { startUtc, endUtc } = weekBounds(draft.tz);
-      const preview = renderWeeklyDigest([], startUtc, endUtc, draft.tz, locale, html);
-      await msg.reply(messages.prefix.saved);
+      const preview = renderWeeklyDigest(
+        [],
+        startUtc,
+        endUtc,
+        draft.tz,
+        locale,
+        savedGroup.digest_header,
+        savedGroup.digest_footer,
+      );
+      await msg.reply(messages.digestBlock.saved(field));
       await msg.reply(preview, {
         parse_mode: 'HTML',
         link_preview_options: { is_disabled: true },
       });
-      await msg.reply(messages.prefix.howToChange);
+      await msg.reply(messages.digestBlock.howToChange(field));
 
       return;
     }
@@ -190,7 +216,8 @@ export function buildPrefixConversation(env: Env): ConversationBuilder<AppContex
 }
 
 /**
- * Registers the "first DM after a mention / /prefix" kickoff middleware.
+ * Registers the "first DM after a mention / /header / /footer" kickoff
+ * middleware.
  *
  * When the user writes to the bot in DM and there is a pending draft stored
  * for them, the middleware inspects the draft kind and enters the matching
@@ -207,7 +234,7 @@ export function registerDmKickoff(bot: Bot<AppContext>): void {
 
     if (
       ctx.conversation.active(EVENT_CONVERSATION_ID) > 0 ||
-      ctx.conversation.active(PREFIX_CONVERSATION_ID) > 0
+      ctx.conversation.active(DIGEST_BLOCK_CONVERSATION_ID) > 0
     ) {
       return next();
     }
@@ -240,13 +267,15 @@ export function registerDmKickoff(bot: Bot<AppContext>): void {
       return;
     }
 
-    const prefixPayload: PrefixDraft = {
+    const blockPayload: DigestBlockDraft = {
       groupChatId: draft.groupChatId,
       creatorId: draft.creatorId,
       tz: draft.tz,
       locale: draft.locale,
+      field: draft.field,
+      ...(draft.primed ? { primed: true } : {}),
     };
-    await ctx.conversation.enter(PREFIX_CONVERSATION_ID, prefixPayload);
+    await ctx.conversation.enter(DIGEST_BLOCK_CONVERSATION_ID, blockPayload);
   });
 }
 
@@ -364,4 +393,3 @@ async function askNonEmpty(
     await msg.reply(errorText);
   }
 }
-
