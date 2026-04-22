@@ -72,6 +72,10 @@ async function refreshGroupDigest(api: Api, repo: Repo, group: GroupRow): Promis
 
       return;
     } catch (err) {
+      if (isMessageNotModifiedError(err)) {
+        return;
+      }
+
       logWarn('weekly.editDigest', err, { chatId, messageId: pinnedId });
     }
   }
@@ -96,4 +100,22 @@ async function refreshGroupDigest(api: Api, repo: Repo, group: GroupRow): Promis
   }
 
   await repo.setPinnedDigest(chatId, sent.message_id, startUtc);
+}
+
+/**
+ * Detects Telegram's benign "message is not modified" response.
+ *
+ * The weekly cron runs every 10 minutes, so trying to refresh an unchanged
+ * digest is expected. In that case we should keep the current message instead
+ * of falling back to posting a brand-new digest.
+ *
+ * @param err Thrown API error.
+ * @returns `true` when the edit was a harmless no-op.
+ */
+function isMessageNotModifiedError(err: unknown): boolean {
+  if (!(err instanceof Error)) {
+    return false;
+  }
+
+  return err.message.includes('message is not modified');
 }

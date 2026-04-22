@@ -6,10 +6,9 @@ import type { Messages } from '../types.js';
 export const en: Messages = {
   event: {
     noDraft: 'Nothing to submit. Reply to a post in the group and mention me.',
-    askDate: (format, tz) =>
+    askDate: (format) =>
       "Let's submit an event. Please enter the date and time in the format:\n" +
       `<code>${format}</code>\n` +
-      `timezone: <code>${tz}</code>\n` +
       'For example: <code>23.04.2026 19:00</code>',
     invalidDate: (format) =>
       `Could not parse the date. Format must be exactly: <code>${format}</code>`,

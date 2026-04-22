@@ -52,18 +52,22 @@ export function isValidIanaTz(tz: string): boolean {
  * @returns ISO UTC string or `null` when the input is invalid.
  */
 export function parseLocalDate(input: string, tz: string): string | null {
-  const trimmed = input.trim();
-  const d = dayjs.tz(trimmed, INPUT_FORMAT, tz);
+  try {
+    const trimmed = input.trim();
+    const d = dayjs.tz(trimmed, INPUT_FORMAT, tz);
 
-  if (!d.isValid()) {
+    if (!d.isValid()) {
+      return null;
+    }
+
+    if (d.format(INPUT_FORMAT) !== trimmed) {
+      return null;
+    }
+
+    return d.utc().toISOString();
+  } catch {
     return null;
   }
-
-  if (d.format(INPUT_FORMAT) !== trimmed) {
-    return null;
-  }
-
-  return d.utc().toISOString();
 }
 
 /**

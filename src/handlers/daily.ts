@@ -19,9 +19,10 @@ import { renderDailyDigest } from '../util/render.js';
  * 2. Skips the group if `groups.last_daily_digest_day` already matches, so
  *    repeated ticks within the same local day are no-ops.
  * 3. Selects all approved events scheduled in the current local-day window.
- * 4. Renders a localized announcement (with a "no events today" placeholder
- *    when the list is empty) and sends it to the group chat.
- * 5. Persists the new `last_daily_digest_day` value so the next tick of the
+ * 4. If there are no events yet, does nothing so a later approval can still
+ *    produce the day's first announcement.
+ * 5. Otherwise renders a localized announcement and sends it to the group chat.
+ * 6. Persists the new `last_daily_digest_day` value so the next tick of the
  *    same day skips this group.
  *
  * The update is written only after a successful send, so Worker retries
@@ -62,6 +63,11 @@ async function announceGroupDaily(api: Api, repo: Repo, group: GroupRow): Promis
 
   const { startUtc, endUtc } = dayBounds(group.tz);
   const events = await repo.listApprovedInRange(chatId, startUtc, endUtc);
+
+  if (events.length === 0) {
+    return;
+  }
+
   const body = renderDailyDigest(events, group.tz, coerceLocale(group.language), group.username);
 
   await api.sendMessage(chatId, body, {

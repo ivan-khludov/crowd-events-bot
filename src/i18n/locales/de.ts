@@ -6,10 +6,9 @@ import type { Messages } from '../types.js';
 export const de: Messages = {
   event: {
     noDraft: 'Nichts zum Einreichen. Antworte auf einen Beitrag in der Gruppe und erwähne mich.',
-    askDate: (format, tz) =>
+    askDate: (format) =>
       'Lass uns eine Veranstaltung eintragen. Bitte gib Datum und Uhrzeit im Format ein:\n' +
       `<code>${format}</code>\n` +
-      `Zeitzone: <code>${tz}</code>\n` +
       'Zum Beispiel: <code>23.04.2026 19:00</code>',
     invalidDate: (format) =>
       `Datum konnte nicht gelesen werden. Format muss genau sein: <code>${format}</code>`,

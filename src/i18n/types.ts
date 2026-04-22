@@ -102,7 +102,7 @@ export interface SettingsArgs {
 export interface Messages {
   event: {
     noDraft: string;
-    askDate: (format: string, tz: string) => string;
+    askDate: (format: string) => string;
     invalidDate: (format: string) => string;
     askTitle: string;
     titleEmpty: string;

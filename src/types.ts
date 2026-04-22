@@ -58,6 +58,12 @@ export interface EventDraft {
   creatorId: number;
   tz: string;
   locale: string;
+  /**
+   * When `true`, the mention handler has already asked the very first
+   * conversation question (date/time) directly in DM, so the conversation
+   * must skip its initial prompt and wait for the user's reply straight away.
+   */
+  primed?: boolean;
 }
 
 /**

@@ -7,10 +7,9 @@ import type { Messages } from '../types.js';
 export const ru: Messages = {
   event: {
     noDraft: 'Нечего оформлять. Ответьте на пост в группе и упомяните меня.',
-    askDate: (format, tz) =>
+    askDate: (format) =>
       'Давайте оформим событие. Введите дату и время в формате:\n' +
       `<code>${format}</code>\n` +
-      `по времени: <code>${tz}</code>\n` +
       'Например: <code>23.04.2026 19:00</code>',
     invalidDate: (format) => `Не понял дату. Формат строго: <code>${format}</code>`,
     askTitle: 'Отлично. Теперь название события.',

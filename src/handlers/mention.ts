@@ -3,7 +3,7 @@ import { InlineKeyboard, type Bot } from 'grammy';
 import type { AppContext } from '../bot.js';
 import { t } from '../i18n/index.js';
 import { coerceLocale } from '../i18n/types.js';
-import { startOfDayUtcIso } from '../util/date.js';
+import { INPUT_FORMAT, startOfDayUtcIso } from '../util/date.js';
 
 /**
  * Attaches the "user mentions the bot as a reply to a post" trigger.
@@ -13,8 +13,10 @@ import { startOfDayUtcIso } from '../util/date.js';
  * 1. Ensures the group is tracked in `groups` and picks up its `daily_limit`.
  * 2. Counts events submitted by this user today (MSK) and rejects further ones
  *    if the limit is reached.
- * 3. Stores a {@link ../types.js#EventDraft} keyed by the user id and tries to
- *    nudge them in DM. If DMs are closed, replies in the group instead.
+ * 3. Tries to send the first conversation question (date/time) directly in
+ *    DM. If the bot can DM the user, the pending draft is marked as
+ *    "primed" so the conversation skips its opening prompt once the user
+ *    replies. Otherwise a deep-link button is posted in the group.
  *
  * @param bot grammY bot to attach listeners to.
  */
@@ -78,6 +80,21 @@ export function registerMentionHandler(bot: Bot<AppContext>): void {
       return;
     }
 
+    let dmPrimed = false;
+
+    try {
+      await ctx.api.sendMessage(user.id, messages.event.askDate(INPUT_FORMAT), {
+        parse_mode: 'HTML',
+      });
+      dmPrimed = true;
+    } catch {
+      // DM delivery failed (user hasn't opened the bot or blocked it). Fall
+      // back to the in-group invite below. Only Telegram send errors are
+      // swallowed here — database errors from `putPendingDraft` must
+      // propagate so the caller can retry / log instead of silently
+      // degrading to a non-primed flow.
+    }
+
     await ctx.repo.putPendingDraft(user.id, {
       kind: 'event',
       originalChatId: chat.id,
@@ -87,7 +104,12 @@ export function registerMentionHandler(bot: Bot<AppContext>): void {
       creatorId: user.id,
       tz: group.tz,
       locale,
+      ...(dmPrimed ? { primed: true } : {}),
     });
+
+    if (dmPrimed) {
+      return;
+    }
 
     const deepLink = `https://t.me/${botUsername}?start=event`;
     const kb = new InlineKeyboard().url(messages.mention.openDmButton, deepLink);

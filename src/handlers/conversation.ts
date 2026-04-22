@@ -57,10 +57,7 @@ export function buildEventConversation(env: Env): ConversationBuilder<AppContext
       return;
     }
 
-    await ctx.reply(messages.event.askDate(INPUT_FORMAT, escapeForCode(draft.tz)), {
-      parse_mode: 'HTML',
-    });
-    const datetimeUtc = await askDateTime(conversation, draft.tz, locale);
+    const datetimeUtc = await resolveInitialDateTime(conversation, ctx, draft, locale);
 
     await ctx.reply(messages.event.askTitle);
     const title = await askNonEmpty(conversation, messages.event.titleEmpty);
@@ -236,6 +233,7 @@ export function registerDmKickoff(bot: Bot<AppContext>): void {
         creatorId: draft.creatorId,
         tz: draft.tz,
         locale: draft.locale,
+        ...(draft.primed ? { primed: true } : {}),
       };
       await ctx.conversation.enter(EVENT_CONVERSATION_ID, payload);
 
@@ -264,6 +262,54 @@ export function voteKeyboard(eventId: string, up: number, down: number): InlineK
   const { upLabel, downLabel } = renderVoteButtonLabels(up, down);
 
   return new InlineKeyboard().text(upLabel, `v:u:${eventId}`).text(downLabel, `v:d:${eventId}`);
+}
+
+/**
+ * Resolves the very first piece of data for the event flow — the date/time.
+ *
+ * grammY conversations v2 consumes the update that triggered
+ * `ctx.conversation.enter(...)` via an implicit initial wait, so the builder
+ * always receives the first update as `ctx`. When the mention handler has
+ * already asked for the date in DM (`draft.primed`), that first message *is*
+ * the user's date answer — calling `askDateTime` straight away would wait for
+ * a second message and effectively drop the input. To avoid that, parse the
+ * primed message inline and only fall back to the standard
+ * ask-and-retry loop on a bad first reply.
+ *
+ * @param conversation Active conversation handle.
+ * @param ctx First update's context (also the primed reply when `primed`).
+ * @param draft Conversation draft containing the `primed` flag and timezone.
+ * @param locale UI locale for the prompts.
+ * @returns ISO UTC datetime string.
+ */
+async function resolveInitialDateTime(
+  conversation: Conversation<AppContext, Context>,
+  ctx: Context,
+  draft: EventDraft,
+  locale: Locale,
+): Promise<string> {
+  const messages = t(locale);
+
+  if (draft.primed) {
+    const primedText = ctx.message?.text?.trim();
+    const parsed = primedText ? parseLocalDate(primedText, draft.tz) : null;
+
+    if (parsed) {
+      return parsed;
+    }
+
+    await ctx.reply(messages.event.invalidDate(INPUT_FORMAT), {
+      parse_mode: 'HTML',
+    });
+
+    return askDateTime(conversation, draft.tz, locale);
+  }
+
+  await ctx.reply(messages.event.askDate(INPUT_FORMAT), {
+    parse_mode: 'HTML',
+  });
+
+  return askDateTime(conversation, draft.tz, locale);
 }
 
 /**
@@ -319,14 +365,3 @@ async function askNonEmpty(
   }
 }
 
-/**
- * Escapes a string for safe inclusion inside a `<code>…</code>` block in
- * Telegram HTML. The same rules as {@link escapeHtml} apply; kept local so
- * `render.ts` can stay focused on message rendering.
- *
- * @param s Raw string.
- * @returns HTML-safe string.
- */
-function escapeForCode(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
