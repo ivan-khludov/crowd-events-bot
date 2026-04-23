@@ -64,7 +64,7 @@ export function createBot(env: Env): Bot<AppContext> {
         type: 'key',
         version: 0,
         getStorageKey: (ctx: AppContext): string | undefined =>
-          ctx.from ? `conv:${ctx.from.id}` : undefined,
+          ctx.from && ctx.chat ? `conv:${ctx.chat.id}:${ctx.from.id}` : undefined,
         adapter: new D1SessionStorage<VersionedState<ConversationData>>(env.DB),
       },
     }),

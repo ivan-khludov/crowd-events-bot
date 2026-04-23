@@ -145,74 +145,113 @@ export function buildDigestBlockConversation(env: Env): ConversationBuilder<AppC
 
     const field = draft.field;
 
-    if (!draft.primed) {
+    if (draft.primed) {
+      const primedMsg = ctx.message?.text;
+
+      if (primedMsg) {
+        const consumed = await trySaveDigestBlockFromMessage(conversation, ctx, env, draft, field);
+
+        if (consumed) {
+          return;
+        }
+      }
+      // When the draft is primed, the /header or /footer handler has already
+      // delivered the opening prompt to the admin's DM, so we must treat the
+      // first update as the admin's answer (same pattern as resolveInitialDateTime
+      // in the event conversation). If we don't, we'd drop the content message.
+    } else {
       await ctx.reply(messages.digestBlock.ask(field, MAX_DIGEST_BLOCK_LEN));
     }
-    // When the draft is primed, the /header or /footer handler has already
-    // delivered this exact prompt to the admin's DM, so repeating it here
-    // would only duplicate the question.
 
     for (;;) {
       const msg = await conversation.waitFor(':text');
-      const text = msg.msg.text;
+      const saved = await trySaveDigestBlockFromMessage(conversation, msg, env, draft, field);
 
-      if (text.trim() === '/cancel') {
-        await msg.reply(messages.digestBlock.cancelled(field));
-
+      if (saved) {
         return;
       }
-
-      if (text.length > MAX_DIGEST_BLOCK_LEN) {
-        await msg.reply(messages.digestBlock.tooLong(text.length, MAX_DIGEST_BLOCK_LEN));
-        continue;
-      }
-
-      if (text.trim().length === 0) {
-        await msg.reply(messages.digestBlock.empty(field));
-        continue;
-      }
-
-      const entities = msg.msg.entities as InputEntity[] | undefined;
-      const html = entitiesToHtml(text, entities);
-
-      const savedGroup = await conversation.external(async () => {
-        const repo = new Repo(env.DB);
-
-        if (field === 'header') {
-          await repo.setDigestHeader(draft.groupChatId, html);
-        } else {
-          await repo.setDigestFooter(draft.groupChatId, html);
-        }
-
-        return repo.getGroup(draft.groupChatId);
-      });
-
-      if (!savedGroup) {
-        await msg.reply(messages.digestBlock.saveFailed(field));
-
-        return;
-      }
-
-      const { startUtc, endUtc } = weekBounds(draft.tz);
-      const preview = renderWeeklyDigest(
-        [],
-        startUtc,
-        endUtc,
-        draft.tz,
-        locale,
-        savedGroup.digest_header,
-        savedGroup.digest_footer,
-      );
-      await msg.reply(messages.digestBlock.saved(field));
-      await msg.reply(preview, {
-        parse_mode: 'HTML',
-        link_preview_options: { is_disabled: true },
-      });
-      await msg.reply(messages.digestBlock.howToChange(field));
-
-      return;
     }
   };
+}
+
+/**
+ * Validates and persists a digest header/footer value from a single text message.
+ *
+ * @param conversation Active conversation handle.
+ * @param ctx Message context.
+ * @param env Worker environment captured from the surrounding request.
+ * @param draft Conversation draft.
+ * @param field Which digest block is being edited.
+ * @returns `true` when the block has been saved or the flow was cancelled.
+ */
+async function trySaveDigestBlockFromMessage(
+  conversation: Conversation<AppContext, Context>,
+  ctx: Context,
+  env: Env,
+  draft: DigestBlockDraft,
+  field: DigestBlockDraft['field'],
+): Promise<boolean> {
+  const locale: Locale = coerceLocale(draft.locale);
+  const messages = t(locale);
+  const text = ctx.message?.text ?? '';
+
+  if (text.trim() === '/cancel') {
+    await ctx.reply(messages.digestBlock.cancelled(field));
+
+    return true;
+  }
+
+  if (text.length > MAX_DIGEST_BLOCK_LEN) {
+    await ctx.reply(messages.digestBlock.tooLong(text.length, MAX_DIGEST_BLOCK_LEN));
+
+    return false;
+  }
+
+  if (text.trim().length === 0) {
+    await ctx.reply(messages.digestBlock.empty(field));
+
+    return false;
+  }
+
+  const entities = (ctx.message as { entities?: InputEntity[] } | undefined)?.entities;
+  const html = entitiesToHtml(text, entities);
+
+  const savedGroup = await conversation.external(async () => {
+    const repo = new Repo(env.DB);
+
+    if (field === 'header') {
+      await repo.setDigestHeader(draft.groupChatId, html);
+    } else {
+      await repo.setDigestFooter(draft.groupChatId, html);
+    }
+
+    return repo.getGroup(draft.groupChatId);
+  });
+
+  if (!savedGroup) {
+    await ctx.reply(messages.digestBlock.saveFailed(field));
+
+    return true;
+  }
+
+  const { startUtc, endUtc } = weekBounds(draft.tz);
+  const preview = renderWeeklyDigest(
+    [],
+    startUtc,
+    endUtc,
+    draft.tz,
+    locale,
+    savedGroup.digest_header,
+    savedGroup.digest_footer,
+  );
+  await ctx.reply(messages.digestBlock.saved(field));
+  await ctx.reply(preview, {
+    parse_mode: 'HTML',
+    link_preview_options: { is_disabled: true },
+  });
+  await ctx.reply(messages.digestBlock.howToChange(field));
+
+  return true;
 }
 
 /**
