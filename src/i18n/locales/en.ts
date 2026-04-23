@@ -81,8 +81,8 @@ export const en: Messages = {
     empty: 'No approved events yet.',
     weekHeader: ({ startDay, endDay, startMonth, endMonth, sameMonth }) =>
       sameMonth
-        ? `Events this week: ${startMonth} ${startDay}–${endDay}`
-        : `Events this week: ${startMonth} ${startDay} – ${endMonth} ${endDay}`,
+        ? `Events in the next two weeks: ${startMonth} ${startDay}–${endDay}`
+        : `Events in the next two weeks: ${startMonth} ${startDay} – ${endMonth} ${endDay}`,
     dayLabel: ({ weekday, day, month }) => `${weekday}, ${month} ${day}`,
     weekdays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
     months: [
@@ -99,7 +99,7 @@ export const en: Messages = {
       'November',
       'December',
     ],
-    todayHeader: 'Events today:',
+    todayHeader: (n) => (n === 1 ? 'Event today:' : 'Events today:'),
     todayEmpty: 'No events today.',
   },
   admin: {

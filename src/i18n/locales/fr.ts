@@ -80,8 +80,8 @@ export const fr: Messages = {
     empty: 'Aucun événement approuvé pour le moment.',
     weekHeader: ({ startDay, endDay, startMonth, endMonth, sameMonth }) =>
       sameMonth
-        ? `Événements cette semaine : ${startDay}–${endDay} ${endMonth}`
-        : `Événements cette semaine : ${startDay} ${startMonth} – ${endDay} ${endMonth}`,
+        ? `Événements sur les deux prochaines semaines : ${startDay}–${endDay} ${endMonth}`
+        : `Événements sur les deux prochaines semaines : ${startDay} ${startMonth} – ${endDay} ${endMonth}`,
     dayLabel: ({ weekday, day, month }) => `${weekday} ${day} ${month}`,
     weekdays: ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'],
     months: [
@@ -98,7 +98,7 @@ export const fr: Messages = {
       'novembre',
       'décembre',
     ],
-    todayHeader: "Événements aujourd'hui :",
+    todayHeader: (n) => (n === 1 ? "Événement aujourd'hui :" : "Événements aujourd'hui :"),
     todayEmpty: "Aucun événement aujourd'hui.",
   },
   admin: {

@@ -13,8 +13,8 @@ import { renderWeeklyDigest } from '../util/render.js';
  *
  * For each group the function:
  *
- * 1. Resolves the current local-week `[startUtc, endUtc)` window using the
- *    group's configured `tz`.
+ * 1. Resolves the current local two-week `[startUtc, endUtc)` window (this
+ *    Monday through the following Sunday, inclusive) using the group's `tz`.
  * 2. Selects all approved events that fall inside the window.
  * 3. Renders a digest post (optionally wrapped with the group's
  *    `digest_header` / `digest_footer` blocks) and either edits the currently
@@ -48,7 +48,7 @@ export async function runWeeklyDigest(env: Env): Promise<void> {
  */
 async function refreshGroupDigest(api: Api, repo: Repo, group: GroupRow): Promise<void> {
   const chatId = group.chat_id;
-  const { startUtc, endUtc } = weekBounds(group.tz);
+  const { startUtc, endUtc } = weekBounds(group.tz, undefined, 2);
 
   const events = await repo.listApprovedInRange(chatId, startUtc, endUtc);
   const body = renderWeeklyDigest(

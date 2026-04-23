@@ -234,7 +234,7 @@ async function trySaveDigestBlockFromMessage(
     return true;
   }
 
-  const { startUtc, endUtc } = weekBounds(draft.tz);
+  const { startUtc, endUtc } = weekBounds(draft.tz, undefined, 2);
   const preview = renderWeeklyDigest(
     [],
     startUtc,

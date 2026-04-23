@@ -3,7 +3,7 @@
 Community-driven events aggregator for Telegram groups. Built on
 [Cloudflare Workers](https://developers.cloudflare.com/workers/) with
 [grammY](https://grammy.dev/), stores everything in
-[D1](https://developers.cloudflare.com/d1/), schedules the weekly digest via
+[D1](https://developers.cloudflare.com/d1/), schedules the pinned digest via
 Cloudflare Cron Triggers.
 
 ## What it does
@@ -15,9 +15,9 @@ Cloudflare Cron Triggers.
 - Members vote with inline buttons (`👍`/`👎`). Once `votes_up` crosses the
   per-group `vote_threshold` and beats `votes_down`, the event becomes
   `approved`.
-- Every 10 minutes a cron tick recomputes the current week (in each group's
-  own timezone) and edits (or re-posts and re-pins) a pinned weekly digest
-  grouped by day. Admins can wrap the schedule with custom HTML blocks
+- Every 10 minutes a cron tick recomputes the next two local weeks and
+  edits (or re-posts and re-pins) a pinned digest grouped by day. The digest
+  window is always the current week plus the following week (Mon–Sun each). Admins can wrap the schedule with custom HTML blocks
   (welcome text, rules link, etiquette reminder, etc.) above and below the
   schedule via `/header` and `/footer`.
 - Per-user submission limit: `daily_limit` events per 24h (in the group's tz).
@@ -97,7 +97,7 @@ Common scripts:
 ## Bot permissions in Telegram
 
 - Make the bot an **admin** of the target group with at least the
-  `Pin Messages` right. Without it the weekly digest cannot be pinned.
+  `Pin Messages` right. Without it the pinned digest cannot be updated.
 - Disable **privacy mode** via `@BotFather` → `Bot Settings` → `Group Privacy`
   → `Turn off`. Otherwise the bot will not see plain `@bot` mentions in group
   messages.
@@ -125,12 +125,12 @@ Issued in the group chat by a user who is `creator` or `administrator`:
   `es` (Español), `ru` (Русский). Without arguments prints the current
   language and the list of options. The language controls every user-facing
   string the bot emits for the group: DM event-submission flow, admin
-  replies, vote-card labels, weekly pinned digest (weekday and month names
+  replies, vote-card labels, pinned two-week digest (weekday and month names
   included) and error messages.
 - `/header` — starts the digest header editor. The bot DMs the admin and
   expects a single message; its text, formatting (bold, italic, underline,
   strikethrough, spoiler, code, pre, blockquote) and hyperlinks are preserved
-  and rendered above "События на неделе:" in the pinned digest. Max 1500
+  and rendered above the two-week schedule title in the pinned digest. Max 1500
   characters.
 - `/clearheader` — removes the digest header.
 - `/footer` — same as `/header` but the block is rendered below the schedule
@@ -237,7 +237,7 @@ crowd-events-bot/
     │   ├── admin.ts        # /settings, /threshold, /limit, /tz, /language, /header, /footer
     │   ├── superadmin.ts   # allowlist guard + /allow /disallow /allowed /whereami
     │   ├── daily.ts        # cron: post the "events today" announcement per group
-    │   └── weekly.ts       # cron: build/edit/pin the weekly digest
+    │   └── weekly.ts       # cron: build/edit/pin the two-week digest
     ├── i18n/
     │   ├── index.ts        # t(locale), bundle registry
     │   ├── types.ts        # Locale, Messages, resolveLocale/coerceLocale
@@ -250,7 +250,7 @@ crowd-events-bot/
         ├── entities.ts     # Telegram text+entities → HTML converter
         ├── link.ts         # public vs private t.me links
         ├── log.ts          # logWarn/logError helpers
-        ├── render.ts       # HTML for event cards and weekly digest
+        ├── render.ts       # HTML for event cards, daily and two-week digests
         └── superadmin.ts   # parseSuperadminIds / isSuperadmin helpers
 ```
 

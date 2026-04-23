@@ -78,8 +78,8 @@ export const ru: Messages = {
     empty: 'Пока нет подтверждённых событий.',
     weekHeader: ({ startDay, endDay, startMonth, endMonth, sameMonth }) =>
       sameMonth
-        ? `События на неделе: ${startDay}–${endDay} ${endMonth}`
-        : `События на неделе: ${startDay} ${startMonth} – ${endDay} ${endMonth}`,
+        ? `События на ближайшие две недели: ${startDay}–${endDay} ${endMonth}`
+        : `События на ближайшие две недели: ${startDay} ${startMonth} – ${endDay} ${endMonth}`,
     dayLabel: ({ weekday, day, month }) => `${weekday}, ${day} ${month}`,
     weekdays: ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'],
     months: [
@@ -96,7 +96,7 @@ export const ru: Messages = {
       'ноября',
       'декабря',
     ],
-    todayHeader: 'Событие сегодня:',
+    todayHeader: (n) => (n === 1 ? 'Событие сегодня:' : 'События сегодня:'),
     todayEmpty: 'На сегодня событий нет.',
   },
   admin: {

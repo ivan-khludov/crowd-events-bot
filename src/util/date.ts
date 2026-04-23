@@ -71,20 +71,27 @@ export function parseLocalDate(input: string, tz: string): string | null {
 }
 
 /**
- * Computes the half-open `[start, end)` week bounds in UTC for the local
- * week that contains `refUtcIso`. The week starts on Monday 00:00 in `tz`.
+ * Computes the half-open `[start, end)` bounds in UTC: from Monday 00:00 in
+ * `tz` for the local week that contains `refUtcIso`, through `spanWeeks`
+ * full local weeks (each 7 days). `startUtc` is always the week’s Monday;
+ * `endUtc` is `spanWeeks` weeks later on the next Monday 00:00 local.
  *
  * @param tz IANA timezone that defines the local week.
  * @param refUtcIso Reference instant in ISO UTC (defaults to "now").
+ * @param spanWeeks How many consecutive local weeks to include (default 1).
  * @returns Start and end ISO UTC timestamps.
  */
-export function weekBounds(tz: string, refUtcIso?: string): { startUtc: string; endUtc: string } {
+export function weekBounds(
+  tz: string,
+  refUtcIso?: string,
+  spanWeeks: number = 1,
+): { startUtc: string; endUtc: string } {
   const ref = refUtcIso ? dayjs.utc(refUtcIso) : dayjs.utc();
   const local = ref.tz(tz);
   const dow = local.day(); // 0 = Sun .. 6 = Sat
   const daysFromMonday = (dow + 6) % 7;
   const start = local.subtract(daysFromMonday, 'day').startOf('day');
-  const end = start.add(7, 'day');
+  const end = start.add(7 * spanWeeks, 'day');
 
   return { startUtc: start.utc().toISOString(), endUtc: end.utc().toISOString() };
 }
@@ -195,8 +202,8 @@ export function formatLocalDayLabel(isoUtc: string, tz: string, locale: Locale):
  * (same-month vs cross-month). Inputs are numeric days + localized month
  * names so each language can pick its own grammar.
  *
- * @param startUtc ISO UTC of the week start (Monday 00:00 local).
- * @param endUtc ISO UTC of the exclusive week end (next Monday 00:00 local).
+ * @param startUtc ISO UTC of the range start (Monday 00:00 local).
+ * @param endUtc ISO UTC of the exclusive range end (next Monday 00:00 local after N weeks).
  * @param tz IANA timezone.
  * @param locale UI locale.
  * @returns Localised header string.

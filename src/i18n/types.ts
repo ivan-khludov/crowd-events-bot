@@ -155,7 +155,7 @@ export interface Messages {
     dayLabel: (args: DayLabelArgs) => string;
     weekdays: readonly string[];
     months: readonly string[];
-    todayHeader: string;
+    todayHeader: (eventCount: number) => string;
     todayEmpty: string;
   };
   admin: {

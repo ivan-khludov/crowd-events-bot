@@ -82,9 +82,9 @@ export function renderVoteButtonLabels(
  * can add static welcome/rules/etiquette blocks around it. Each non-empty
  * block is separated from the schedule by a blank line.
  *
- * @param events Approved events within the week window.
- * @param startUtc Week start in ISO UTC (Monday 00:00 local).
- * @param endUtc Exclusive week end in ISO UTC.
+ * @param events Approved events within the digest window (two local weeks).
+ * @param startUtc Range start in ISO UTC (Monday 00:00 local).
+ * @param endUtc Exclusive range end in ISO UTC (Monday after two local weeks).
  * @param tz IANA timezone used for grouping and formatting.
  * @param locale UI locale.
  * @param headerHtml Optional pre-rendered HTML block shown above the schedule.
@@ -194,7 +194,7 @@ export function renderDailyDigest(
   groupUsername?: string | null,
 ): string {
   const messages = t(locale);
-  const lines: string[] = [`<b>${messages.digest.todayHeader}</b>`];
+  const lines: string[] = [`<b>${messages.digest.todayHeader(events.length)}</b>`];
 
   if (events.length === 0) {
     lines.push(messages.digest.todayEmpty);
